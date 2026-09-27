@@ -1,0 +1,16 @@
+# Despliegue en Render (https://render.com) con "Blueprint".
+services:
+  - type: web
+    name: rompecabezas-a-dos
+    runtime: node
+    plan: starter        # el plan "free" funciona, pero borra las salas al reiniciar (sin disco)
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: datos
+      mountPath: /var/data
+      sizeGB: 1
