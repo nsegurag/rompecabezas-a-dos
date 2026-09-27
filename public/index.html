@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rompecabezas a Dos</title>
+<meta name="description" content="Sube tu foto, crea una sala y armen el rompecabezas juntos en tiempo real.">
+<meta name="theme-color" content="#241c2a">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<!-- ============================ VESTÍBULO ============================ -->
+<section id="lobby" class="screen">
+  <header class="lb-head">
+    <div class="brand"><img src="/favicon.svg" width="30" height="30" alt=""><span>Rompecabezas a Dos</span></div>
+    <div class="me" id="meBox">
+      <label for="meName" class="lbl">Tu nombre</label>
+      <input id="meName" maxlength="24" autocomplete="nickname">
+      <div class="swatches" id="meColors" role="radiogroup" aria-label="Tu color"></div>
+    </div>
+  </header>
+
+  <main class="lb-main">
+    <div class="lb-left">
+      <h1>Tus fotos, en piezas, <em>armadas en compañía.</em></h1>
+      <p class="lede">Sube una foto, elige cuántas piezas y comparte el código de la sala. Cada quien ve en vivo lo que mueve el otro, y las piezas que llegan a su lugar se quedan fijas.</p>
+      <div class="actions-col">
+        <button class="btn primary big" id="btnCreate">Crear sala con mi foto</button>
+        <form class="join" id="joinForm" autocomplete="off">
+          <label for="joinCode" class="lbl">¿Tienes un código?</label>
+          <div class="join-row">
+            <input id="joinCode" maxlength="5" placeholder="ABCDE" spellcheck="false" autocapitalize="characters" aria-label="Código de la sala">
+            <button class="btn" type="submit">Entrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="lb-right">
+      <div class="list-head"><h2>Salas públicas</h2><button class="btn ghost small" id="btnRefresh">Actualizar</button></div>
+      <div class="rooms" id="roomList"><p class="empty">Cargando salas…</p></div>
+    </div>
+  </main>
+</section>
+
+<!-- ============================ JUEGO ============================ -->
+<section id="game" class="screen" hidden>
+  <header class="bar">
+    <button class="btn ghost icon-btn" id="btnLeave" aria-label="Volver a las salas" title="Volver a las salas">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3 5 9l6 6"/></svg>
+    </button>
+    <div class="room-id">
+      <span class="room-name" id="roomName">Sala</span>
+      <button class="code-chip" id="roomCode" title="Copiar enlace de la sala">·····</button>
+      <span class="net" id="netDot" title="Conectado"></span>
+    </div>
+    <div class="players" id="players"></div>
+    <div class="bar-actions">
+      <button class="btn" id="btnChat">Chat<span class="badge" id="chatBadge" hidden>0</span></button>
+      <button class="btn" id="btnShare">Invitar</button>
+      <button class="btn primary" id="btnNew">Nueva foto</button>
+    </div>
+  </header>
+
+  <main id="stage">
+    <canvas id="cv" aria-label="Mesa del rompecabezas"></canvas>
+
+    <div class="hud" aria-live="polite">
+      <span id="hudPlaced">0 / 0 en su lugar</span>
+      <span id="hudProg">Unidas 0%</span>
+      <span id="hudTime">00:00</span>
+    </div>
+
+    <div class="tools" role="toolbar" aria-label="Herramientas">
+      <button class="tool" id="tArrange" title="Ordena las piezas sueltas alrededor del marco, bordes primero">
+        <svg viewBox="0 0 20 20"><rect x="2" y="2" width="6" height="6" rx="1.5"/><rect x="12" y="2" width="6" height="6" rx="1.5"/><rect x="2" y="12" width="6" height="6" rx="1.5"/><rect x="12" y="12" width="6" height="6" rx="1.5"/></svg><span>Ordenar</span></button>
+      <button class="tool" id="tEdges" aria-pressed="false" title="Resalta solo las piezas del borde">
+        <svg viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="15" height="15" rx="2" fill="none" stroke-width="2.4"/></svg><span>Bordes</span></button>
+      <button class="tool" id="tGuide" aria-pressed="false" title="Muestra la foto tenue dentro del marco">
+        <svg viewBox="0 0 20 20"><path d="M2 15l5-6 4 4 2.5-3L18 15z"/><circle cx="14" cy="6" r="2"/></svg><span>Guía</span></button>
+      <button class="tool" id="tPhoto" aria-pressed="false" title="Muestra la foto original">
+        <svg viewBox="0 0 20 20"><rect x="2" y="4" width="16" height="12" rx="2" fill="none" stroke-width="2"/><circle cx="10" cy="10" r="3"/></svg><span>Foto</span></button>
+      <button class="tool" id="tPan" aria-pressed="false" title="Modo mano: arrastra para mover la mesa">
+        <svg viewBox="0 0 20 20"><path d="M10 1.5l2.5 3h-5zM10 18.5l-2.5-3h5zM1.5 10l3-2.5v5zM18.5 10l-3 2.5v-5z"/><circle cx="10" cy="10" r="2"/></svg><span>Mover mesa</span></button>
+    </div>
+
+    <div class="zoom">
+      <button id="zIn" aria-label="Acercar" title="Acercar">+</button>
+      <button id="zOut" aria-label="Alejar" title="Alejar">−</button>
+      <button id="zFit" aria-label="Ver toda la mesa" title="Ver toda la mesa"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5v-4h4M14.5 5.5v-4h-4M1.5 10.5v4h4M14.5 10.5v4h-4"/></svg></button>
+      <button id="zFull" aria-label="Pantalla completa" title="Pantalla completa"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5.5 1.5h-4v4M10.5 1.5h4v4M5.5 14.5h-4v-4M10.5 14.5h4v-4"/><rect x="5" y="5" width="6" height="6" rx="1"/></svg></button>
+    </div>
+
+    <figure class="photo" id="photo" hidden><img id="photoImg" alt="Foto original del rompecabezas"><figcaption>Foto original</figcaption></figure>
+
+    <div class="tip" id="tip" hidden>
+      <p><b>Cómo jugar.</b> Arrastra las piezas con el dedo o el ratón. Cuando una pieza llega a su lugar dentro del marco se queda fija.</p>
+      <p>Para mover la mesa usa <b>clic derecho</b>, la <b>barra espaciadora</b>, dos dedos, o el botón <b>Mover mesa</b>. La rueda hace zoom.</p>
+      <button class="btn small" id="tipOk">Entendido</button>
+    </div>
+
+    <aside class="chat" id="chat" hidden aria-label="Chat de la sala">
+      <div class="chat-head"><b>Chat de la sala</b><button class="btn ghost small" id="chatClose">Cerrar</button></div>
+      <ol class="msgs" id="msgs"></ol>
+      <form class="chat-form" id="chatForm" autocomplete="off"><input id="chatInput" maxlength="240" placeholder="Escribe un mensaje…" aria-label="Mensaje"><button class="btn primary small" type="submit">Enviar</button></form>
+    </aside>
+
+    <div class="done" id="done" hidden>
+      <div><strong>¡Completado!</strong><div class="muted" id="doneTime"></div></div>
+      <button class="btn" id="doneClose">Admirar</button>
+      <button class="btn primary" id="doneNew">Otra foto</button>
+    </div>
+  </main>
+</section>
+
+<!-- ============================ MODALES ============================ -->
+<div class="scrim" id="mPhoto" hidden>
+  <form class="modal" role="dialog" aria-modal="true" aria-labelledby="mPhotoT" id="photoForm">
+    <h2 id="mPhotoT">Crear sala</h2>
+    <div class="create-only grid2">
+      <div class="field"><label class="lbl" for="roomNameIn">Nombre de la sala</label><input id="roomNameIn" maxlength="40"></div>
+      <div class="field"><span class="lbl">Jugadores</span><div class="seg seg3" id="segMax"></div></div>
+      <div class="field span2"><span class="lbl">Visibilidad</span><div class="seg seg2" id="segVis"></div></div>
+    </div>
+    <label class="drop" id="drop" for="file">
+      <strong>Elige una foto</strong>
+      <span>o arrástrala aquí · JPG, PNG o WebP</span>
+      <input type="file" id="file" accept="image/*" hidden>
+    </label>
+    <div class="cropwrap" id="cropBox" hidden>
+      <canvas id="cropCv" width="340" height="340"></canvas>
+      <div class="row"><span class="lbl">Zoom</span><input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom del recorte"><button class="btn small" type="button" id="cropOther">Otra foto</button></div>
+      <div class="muted">Arrastra la foto para encuadrarla. Se recorta en cuadrado 1:1.</div>
+    </div>
+    <div class="field"><span class="lbl">Piezas</span><div class="seg seg6" id="segN"></div></div>
+    <p class="err" id="photoErr" hidden></p>
+    <div class="foot">
+      <div class="muted" id="photoWarn"></div>
+      <div class="btns"><button class="btn" type="button" id="photoCancel">Cancelar</button><button class="btn primary" type="submit" id="photoGo" disabled>Crear sala</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="scrim" id="mShare" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mShareT">
+    <h2 id="mShareT">Invita a alguien</h2>
+    <p class="muted">Comparte este enlace o dile el código. Entra desde cualquier navegador, sin cuenta.</p>
+    <div class="share-code" id="shareCode">·····</div>
+    <div class="share-row"><input id="shareLink" readonly aria-label="Enlace de la sala"><button class="btn primary" id="shareCopy">Copiar enlace</button></div>
+    <div class="foot"><span class="muted" id="shareInfo"></span><div class="btns"><button class="btn" id="shareClose">Cerrar</button></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
