@@ -182,6 +182,7 @@
     <aside class="call" id="call" hidden aria-label="Llamada">
       <div class="call-head"><b id="callTitle">Llamada</b><button class="icon-btn ghost small" id="callMin" aria-label="Minimizar llamada" title="Minimizar"><svg><use href="#i-minus"/></svg></button></div>
       <div class="tiles" id="tiles"></div>
+      <p class="call-hint" id="callHint" hidden>Tu micrófono y tu cámara están apagados. Tócalos abajo para activarlos.</p>
       <button class="btn small" id="callUnmute" hidden>Toca para activar el sonido</button>
       <div class="call-ctl">
         <button class="round" id="cMic" aria-label="Micrófono"><svg><use href="#i-mic"/></svg></button>
@@ -330,11 +331,9 @@
 <div class="scrim" id="mCall" hidden>
   <div class="modal narrow" role="dialog" aria-modal="true" aria-labelledby="mCallT">
     <h2 id="mCallT">Entrar a la llamada</h2>
-    <p class="muted" id="callInfo">Hablen mientras arman. El navegador te pedirá permiso para usar el micrófono (y la cámara, si la eliges).</p>
-    <div class="call-choice">
-      <button class="choice" id="joinVideo"><svg><use href="#i-cam"/></svg><b>Con cámara</b><span>Voz y video</span></button>
-      <button class="choice" id="joinAudio"><svg><use href="#i-mic"/></svg><b>Solo voz</b><span>Sin video</span></button>
-    </div>
+    <p class="muted" id="callInfo">Hablen mientras arman.</p>
+    <div class="call-off-note"><svg><use href="#i-micoff"/></svg><svg><use href="#i-camoff"/></svg><span>Entras con el <b>micrófono y la cámara apagados</b>. Vas a escuchar y ver a los demás; cuando quieras hablar o mostrarte, tócalos en el panel de la llamada.</span></div>
+    <button class="btn primary big" id="joinCall" type="button">Entrar a la llamada</button>
     <p class="err" id="callErr" hidden></p>
     <div class="foot"><span class="muted">Hasta 6 personas a la vez.</span><button class="btn" data-close="mCall">Cancelar</button></div>
   </div>

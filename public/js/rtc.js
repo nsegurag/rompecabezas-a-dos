@@ -7,7 +7,7 @@
 export class Call {
   constructor(net, ui) {
     this.net = net; this.ui = ui;
-    this.local = null; this.inCall = false; this.mic = true; this.cam = false; this.facing = 'user';
+    this.local = null; this.inCall = false; this.mic = false; this.cam = false; this.facing = 'user';
     this.peers = new Map(); // id -> {pc, polite, makingOffer, ignoreOffer, stream}
     this.ice = null; this.you = null; this.players = [];
     this.meters = new Map(); this.audioCtx = null; this.meterTimer = null;
@@ -23,23 +23,18 @@ export class Call {
     return this.ice;
   }
 
-  async join({ video }) {
+  /**
+   * Entrar a la llamada. Se entra con micrófono y cámara APAGADOS: no se pide
+   * permiso todavía y ya se escucha y se ve a los demás. Cada quien los activa
+   * con los botones cuando quiera (ahí el navegador pide el permiso).
+   */
+  async join() {
     if (this.inCall) return;
     if (!Call.supported()) throw new Error('Tu navegador no permite llamadas. Prueba con Chrome, Edge, Firefox o Safari actualizados.');
     if (!window.isSecureContext) throw new Error('La llamada necesita que la página se abra con https://');
-    try {
-      this.local = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: video ? { width: { ideal: 480 }, height: { ideal: 360 }, facingMode: this.facing } : false,
-      });
-    } catch (e) {
-      if (e && e.name === 'NotAllowedError') throw new Error('No diste permiso para usar el micrófono o la cámara. Actívalo en la configuración del navegador.');
-      if (e && e.name === 'NotFoundError') throw new Error('No encontramos micrófono o cámara en este dispositivo.');
-      throw new Error('No se pudo abrir el micrófono o la cámara.');
-    }
     await this.iceServers();
-    this.inCall = true; this.mic = true; this.cam = !!video;
-    this.meter('me', this.local);
+    this.local = new MediaStream();
+    this.inCall = true; this.mic = false; this.cam = false;
     this.ui.onLocal(this.local, this.state());
     this.announce();
     // Conectar con quienes ya están en la llamada (nosotros hacemos la oferta).
@@ -51,35 +46,56 @@ export class Call {
   leave(silent) {
     for (const id of [...this.peers.keys()]) this.drop(id);
     if (this.local) this.local.getTracks().forEach(t => t.stop());
-    this.local = null; this.inCall = false; this.cam = false;
+    this.local = null; this.inCall = false; this.mic = false; this.cam = false;
     this.unmeter('me');
     if (!silent) this.announce();
     this.ui.onLocal(null, this.state());
   }
-  toggleMic() {
-    if (!this.local) return;
-    this.mic = !this.mic;
-    this.local.getAudioTracks().forEach(t => { t.enabled = this.mic; });
-    this.announce(); this.ui.onLocal(this.local, this.state());
-  }
-  videoSender(pc) {
-    const tr = pc.getTransceivers().find(t => (t.sender.track && t.sender.track.kind === 'video') || (t.receiver.track && t.receiver.track.kind === 'video'));
+
+  /** El canal (audio o video) por el que enviamos a esa persona. */
+  sender(pc, kind) {
+    const tr = pc.getTransceivers().find(t => !t.stopped && t.receiver.track && t.receiver.track.kind === kind);
     return tr ? tr.sender : null;
+  }
+  sendTrack(kind, track) { for (const p of this.peers.values()) { const s = this.sender(p.pc, kind); if (s) s.replaceTrack(track).catch(() => {}); } }
+  permissionError(e, what) {
+    if (e && e.name === 'NotAllowedError') return `No diste permiso para usar ${what}. Actívalo en la configuración del navegador (el candado junto a la dirección).`;
+    if (e && e.name === 'NotFoundError') return `No encontramos ${what} en este dispositivo.`;
+    if (e && e.name === 'NotReadableError') return `Otra app está usando ${what}. Ciérrala e intenta de nuevo.`;
+    return `No se pudo abrir ${what}.`;
+  }
+
+  async toggleMic() {
+    if (!this.local) return;
+    let track = this.local.getAudioTracks()[0];
+    if (this.mic) { // silenciar: el micrófono se apaga del todo
+      if (track) { track.stop(); this.local.removeTrack(track); }
+      this.sendTrack('audio', null); this.unmeter('me');
+      this.mic = false;
+    } else {
+      try {
+        const a = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        track = a.getAudioTracks()[0]; this.local.addTrack(track);
+        this.sendTrack('audio', track); this.meter('me', new MediaStream([track]));
+        this.mic = true;
+      } catch (e) { this.ui.onError(this.permissionError(e, 'el micrófono')); return; }
+    }
+    this.announce(); this.ui.onLocal(this.local, this.state());
   }
   async toggleCam() {
     if (!this.local) return;
     const old = this.local.getVideoTracks()[0];
     if (this.cam) { // apagar: se detiene la cámara (se apaga su luz)
       if (old) { old.stop(); this.local.removeTrack(old); }
-      for (const p of this.peers.values()) { const s = this.videoSender(p.pc); if (s) s.replaceTrack(null); }
+      this.sendTrack('video', null);
       this.cam = false;
     } else {
       try {
         const v = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 480 }, height: { ideal: 360 }, facingMode: this.facing } });
         const track = v.getVideoTracks()[0]; this.local.addTrack(track);
-        for (const p of this.peers.values()) { const s = this.videoSender(p.pc); if (s) s.replaceTrack(track); else p.pc.addTrack(track, this.local); }
+        this.sendTrack('video', track);
         this.cam = true;
-      } catch { this.ui.onError('No se pudo encender la cámara.'); return; }
+      } catch (e) { this.ui.onError(this.permissionError(e, 'la cámara')); return; }
     }
     this.announce(); this.ui.onLocal(this.local, this.state());
   }
@@ -88,10 +104,11 @@ export class Call {
     this.facing = this.facing === 'user' ? 'environment' : 'user';
     const old = this.local.getVideoTracks()[0];
     try {
+      if (old) old.stop();
       const v = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 480 }, height: { ideal: 360 }, facingMode: this.facing } });
       const track = v.getVideoTracks()[0];
-      for (const p of this.peers.values()) { const s = this.videoSender(p.pc); if (s) s.replaceTrack(track); }
-      if (old) { old.stop(); this.local.removeTrack(old); }
+      this.sendTrack('video', track);
+      if (old) this.local.removeTrack(old);
       this.local.addTrack(track);
       this.ui.onLocal(this.local, this.state());
     } catch { this.ui.onError('No se pudo cambiar de cámara.'); }
@@ -105,22 +122,30 @@ export class Call {
     for (const id of [...this.peers.keys()]) if (!inCall.has(id)) this.drop(id);
   }
 
-  peer(id) {
+  /**
+   * Conexión con una persona. Quien la inicia crea un canal de audio y uno de
+   * video (aunque estén apagados); quien responde usa los que vienen en la oferta.
+   * Así prender o apagar micrófono y cámara es solo cambiar la pista del canal.
+   */
+  peer(id, initiator) {
     let p = this.peers.get(id);
     if (p) return p;
     const pc = new RTCPeerConnection({ iceServers: this.ice || [] });
     p = { pc, polite: this.you > id, makingOffer: false, ignoreOffer: false, stream: new MediaStream() };
     this.peers.set(id, p);
     const sig = data => this.net.send({ t: 'rtc', to: id, data });
-    if (this.local) for (const t of this.local.getTracks()) pc.addTrack(t, this.local);
-    // Deja siempre un canal de video listo, aunque la cámara esté apagada, para encenderla sin renegociar.
-    if (!this.local || !this.local.getVideoTracks().length) pc.addTransceiver('video', { direction: 'sendrecv' });
+    if (initiator) {
+      const a = this.local.getAudioTracks()[0], v = this.local.getVideoTracks()[0];
+      pc.addTransceiver(a || 'audio', { direction: 'sendrecv', streams: [this.local] });
+      pc.addTransceiver(v || 'video', { direction: 'sendrecv', streams: [this.local] });
+    }
     pc.onnegotiationneeded = async () => {
       try { p.makingOffer = true; await pc.setLocalDescription(); sig({ description: pc.localDescription }); }
       catch { } finally { p.makingOffer = false; }
     };
     pc.onicecandidate = ({ candidate }) => { if (candidate) sig({ candidate }); };
     pc.ontrack = ({ track }) => {
+      if (p.stream.getTracks().some(t => t.kind === track.kind)) p.stream.getTracks().filter(t => t.kind === track.kind).forEach(t => p.stream.removeTrack(t));
       p.stream.addTrack(track);
       track.onunmute = () => this.ui.onRemote(id, p.stream);
       this.ui.onRemote(id, p.stream);
@@ -132,11 +157,11 @@ export class Call {
     };
     return p;
   }
-  connect(id) { this.peer(id); } // crear la conexión dispara onnegotiationneeded -> oferta
+  connect(id) { this.peer(id, true); } // crear los canales dispara onnegotiationneeded -> oferta
 
   async onSignal(from, data) {
     if (!this.inCall) return;
-    const p = this.peer(from), pc = p.pc;
+    const p = this.peer(from, false), pc = p.pc;
     try {
       if (data.description) {
         const d = data.description;
@@ -144,7 +169,18 @@ export class Call {
         p.ignoreOffer = !p.polite && collision;
         if (p.ignoreOffer) return;
         await pc.setRemoteDescription(d);
-        if (d.type === 'offer') { await pc.setLocalDescription(); this.net.send({ t: 'rtc', to: from, data: { description: pc.localDescription } }); }
+        if (d.type === 'offer') {
+          // Usar los canales de la oferta también para enviar, con lo que tengamos encendido.
+          for (const t of pc.getTransceivers()) {
+            if (t.stopped || !t.receiver.track) continue;
+            if (t.direction === 'recvonly' || t.direction === 'inactive') t.direction = 'sendrecv';
+            const mine = t.receiver.track.kind === 'audio' ? this.local.getAudioTracks()[0] : this.local.getVideoTracks()[0];
+            if (mine && t.sender.track !== mine) await t.sender.replaceTrack(mine);
+            if (t.sender.setStreams) t.sender.setStreams(this.local);
+          }
+          await pc.setLocalDescription();
+          this.net.send({ t: 'rtc', to: from, data: { description: pc.localDescription } });
+        }
       } else if (data.candidate) {
         try { await pc.addIceCandidate(data.candidate); } catch (e) { if (!p.ignoreOffer) throw e; }
       }

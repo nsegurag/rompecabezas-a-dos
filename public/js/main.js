@@ -720,6 +720,9 @@ function renderCall() {
   mic.classList.toggle('off', !st.mic); mic.firstElementChild.firstElementChild.setAttribute('href', st.mic ? '#i-mic' : '#i-micoff');
   cam.classList.toggle('off', !st.cam); cam.firstElementChild.firstElementChild.setAttribute('href', st.cam ? '#i-cam' : '#i-camoff');
   $('cFlip').hidden = !(st.cam && isMobile());
+  $('callHint').hidden = st.mic || st.cam;
+  mic.title = st.mic ? 'Silenciar micrófono' : 'Activar micrófono'; cam.title = st.cam ? 'Apagar cámara' : 'Encender cámara';
+  mic.setAttribute('aria-label', mic.title); cam.setAttribute('aria-label', cam.title);
   const tiles = $('tiles');
   const wanted = [{ id: 'me', name: me.name + ' (tú)', color: me.color, stream: localStream, cam: st.cam, mic: st.mic, me: true },
     ...others.map(p => ({ id: p.id, name: p.name, color: p.color, stream: remoteStreams.get(p.id) || null, cam: p.media.cam, mic: p.media.mic }))];
@@ -750,17 +753,16 @@ $('callUnmute').onclick = () => { document.querySelectorAll('.tile audio, .tile 
 $('btnCall').onclick = () => {
   if (call.inCall) { $('call').classList.toggle('min'); return; }
   const others = (game.players || []).filter(p => p.id !== game.you && p.media && p.media.call);
-  $('callInfo').textContent = others.length ? `${others.map(p => p.name).join(', ')} ${others.length === 1 ? 'está' : 'están'} en la llamada. El navegador te pedirá permiso para usar el micrófono (y la cámara, si la eliges).` : 'Hablen mientras arman. El navegador te pedirá permiso para usar el micrófono (y la cámara, si la eliges).';
+  $('callInfo').textContent = others.length ? `${others.map(p => p.name).join(', ')} ${others.length === 1 ? 'está' : 'están'} en la llamada.` : 'Hablen mientras arman.';
   $('callErr').hidden = true; $('mCall').hidden = false;
 };
-async function joinCall(video) {
-  $('callErr').hidden = true; $('joinVideo').disabled = $('joinAudio').disabled = true;
-  try { game.unlockAudio(); await call.join({ video }); $('mCall').hidden = true; $('call').classList.remove('min'); renderCall(); }
+async function joinCall() {
+  $('callErr').hidden = true; $('joinCall').disabled = true;
+  try { game.unlockAudio(); await call.join(); $('mCall').hidden = true; $('call').classList.remove('min'); renderCall(); }
   catch (e) { $('callErr').textContent = e.message; $('callErr').hidden = false; }
-  finally { $('joinVideo').disabled = $('joinAudio').disabled = false; }
+  finally { $('joinCall').disabled = false; }
 }
-$('joinVideo').onclick = () => joinCall(true);
-$('joinAudio').onclick = () => joinCall(false);
+$('joinCall').onclick = joinCall;
 $('cMic').onclick = () => call.toggleMic();
 $('cCam').onclick = () => call.toggleCam();
 $('cFlip').onclick = () => call.flipCam();
