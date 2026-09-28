@@ -4,9 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rompecabezas a Dos</title>
-<meta name="description" content="Sube tu foto, crea una sala y armen el rompecabezas juntos en tiempo real.">
+<meta name="description" content="Sube tu foto, crea una sala y armen el rompecabezas juntos o en carrera, con voz y cámara.">
 <meta name="theme-color" content="#241c2a">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rompecabezas">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
@@ -14,21 +20,59 @@
 </head>
 <body>
 
-<!-- ============================ VESTÍBULO ============================ -->
+<!-- Iconos reutilizables -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-call" viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 10l6-3v10l-6-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="19" r="2.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.3 10.8l7.4-4.4M8.3 13.2l7.4 4.4" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 4.8a3.3 3.3 0 010 6.4M18 14.7c2 .7 3.2 2.5 3.5 5.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 17l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="16" cy="9.5" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 9l5 3-5 3z" fill="currentColor"/></symbol>
+    <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.3a2.6 2.6 0 115 .9c-.6 1-2.5 1.5-2.5 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-exit" viewBox="0 0 24 24"><path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-tray" viewBox="0 0 24 24"><rect x="2" y="14" width="20" height="7" rx="2" fill="currentColor"/><rect x="4" y="5" width="6" height="6" rx="1.3" fill="currentColor"/><rect x="13" y="3" width="6" height="6" rx="1.3" fill="currentColor"/></symbol>
+    <symbol id="i-arrange" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.6" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.6" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-edges" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.6"/></symbol>
+    <symbol id="i-guide" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2.4"/><path d="M6 17l4-5 3 3 2-2 3 4z" fill="currentColor" opacity=".6"/></symbol>
+    <symbol id="i-react" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="1.4" fill="currentColor"/><circle cx="15" cy="10" r="1.4" fill="currentColor"/><path d="M8 14.5q4 4 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18c1.3 0 1.8-.9 1.4-1.9-.4-1.1.2-2.2 1.4-2.2H17a4 4 0 004-4C21 7 17 3 12 3z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="7.5" cy="11" r="1.4" fill="currentColor"/><circle cx="10.5" cy="7" r="1.4" fill="currentColor"/><circle cx="15.5" cy="8" r="1.4" fill="currentColor"/></symbol>
+    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M12 2l3 3h-2v4h4V7l3 3-3 3v-2h-4v4h2l-3 3-3-3h2v-4H7v2l-3-3 3-3v2h4V5H9z" fill="currentColor"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-micoff" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="3" fill="currentColor"/><path d="M15 10l6-3v10l-6-3z" fill="currentColor"/></symbol>
+    <symbol id="i-camoff" viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="3" fill="currentColor" opacity=".5"/><path d="M15 10l6-3v10l-6-3z" fill="currentColor" opacity=".5"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-flip" viewBox="0 0 24 24"><path d="M4 9a8 8 0 0114-3l2 2M20 15a8 8 0 01-14 3l-2-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 4v4h-4M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-hangup" viewBox="0 0 24 24"><path d="M3 14c5-5 13-5 18 0l-2.5 2.5-3-1.5v-2.5a10 10 0 00-7 0V15l-3 1.5z" fill="currentColor"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 9v4l3 2M9 2h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-together" viewBox="0 0 24 24"><path d="M3 3h8v2.2a2.4 2.4 0 104 0V3h6v8h-2.2a2.4 2.4 0 100 4H21v6h-8v-2.2a2.4 2.4 0 10-4 0V21H3v-8h2.2a2.4 2.4 0 100-4H3z" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============================ INICIO ============================ -->
 <section id="lobby" class="screen">
   <header class="lb-head">
     <div class="brand"><img src="/favicon.svg" width="30" height="30" alt=""><span>Rompecabezas a Dos</span></div>
-    <div class="me" id="meBox">
+    <div class="me">
       <label for="meName" class="lbl">Tu nombre</label>
       <input id="meName" maxlength="24" autocomplete="nickname">
       <div class="swatches" id="meColors" role="radiogroup" aria-label="Tu color"></div>
+      <button class="btn small" id="btnInstall" hidden>Instalar app</button>
     </div>
   </header>
 
   <main class="lb-main">
     <div class="lb-left">
       <h1>Tus fotos, en piezas, <em>armadas en compañía.</em></h1>
-      <p class="lede">Sube una foto, elige cuántas piezas y comparte el código de la sala. Cada quien ve en vivo lo que mueve el otro, y las piezas que llegan a su lugar se quedan fijas.</p>
+      <p class="lede">Sube una foto, elige cuántas piezas y cómo quieren jugar. Comparte el código de la sala y hablen por voz o cámara mientras arman.</p>
       <div class="actions-col">
         <button class="btn primary big" id="btnCreate">Crear sala con mi foto</button>
         <form class="join" id="joinForm" autocomplete="off">
@@ -39,6 +83,11 @@
           </div>
         </form>
       </div>
+      <ul class="modes-info" aria-label="Modos de juego">
+        <li><svg><use href="#i-together"/></svg><div><b>Clásico</b><span>Arman juntos, sin prisa, sobre la misma mesa.</span></div></li>
+        <li><svg><use href="#i-clock"/></svg><div><b>Contrarreloj</b><span>Juntos contra el reloj: ¿lo terminan antes de que se acabe el tiempo?</span></div></li>
+        <li><svg><use href="#i-flag"/></svg><div><b>Carrera</b><span>Cada quien arma su propia copia. Gana quien termine primero.</span></div></li>
+      </ul>
     </div>
     <div class="lb-right">
       <div class="list-head"><h2>Salas públicas</h2><button class="btn ghost small" id="btnRefresh">Actualizar</button></div>
@@ -50,19 +99,17 @@
 <!-- ============================ JUEGO ============================ -->
 <section id="game" class="screen" hidden>
   <header class="bar">
-    <button class="btn ghost icon-btn" id="btnLeave" aria-label="Volver a las salas" title="Volver a las salas">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3 5 9l6 6"/></svg>
-    </button>
+    <button class="icon-btn ghost" id="btnLeave" aria-label="Volver al inicio" title="Volver al inicio"><svg><use href="#i-back"/></svg></button>
     <div class="room-id">
-      <span class="room-name" id="roomName">Sala</span>
-      <button class="code-chip" id="roomCode" title="Copiar enlace de la sala">·····</button>
-      <span class="net" id="netDot" title="Conectado"></span>
+      <div class="room-line"><span class="room-name" id="roomName">Sala</span><span class="net" id="netDot" title="Conectado"></span></div>
+      <div class="room-sub"><button class="code-chip" id="roomCode" title="Copiar enlace de la sala">·····</button><span class="mode-badge" id="modeBadge">Clásico</span></div>
     </div>
-    <div class="players" id="players"></div>
+    <button class="players" id="players" title="Jugadores y ajustes de la sala" aria-label="Jugadores y ajustes de la sala"></button>
     <div class="bar-actions">
-      <button class="btn" id="btnChat">Chat<span class="badge" id="chatBadge" hidden>0</span></button>
-      <button class="btn" id="btnShare">Invitar</button>
-      <button class="btn primary" id="btnNew">Nueva foto</button>
+      <button class="btn" id="btnCall" title="Llamada con voz y cámara"><svg><use href="#i-call"/></svg><span class="lbl-d">Llamada</span><span class="count" id="callCount" hidden>0</span></button>
+      <button class="btn d-only" id="btnChat"><svg><use href="#i-chat"/></svg><span class="lbl-d">Chat</span><span class="badge" id="chatBadge" hidden>0</span></button>
+      <button class="btn d-only" id="btnShare"><svg><use href="#i-share"/></svg><span class="lbl-d">Invitar</span></button>
+      <button class="icon-btn" id="btnMenu" aria-label="Más opciones" aria-expanded="false"><svg><use href="#i-menu"/></svg><span class="badge dot" id="menuBadge" hidden></span></button>
     </div>
   </header>
 
@@ -74,88 +121,289 @@
       <span id="hudProg">Unidas 0%</span>
       <span id="hudTime">00:00</span>
     </div>
+    <div class="clock" id="clock" hidden><svg><use href="#i-clock"/></svg><span id="clockText">10:00</span></div>
 
-    <div class="tools" role="toolbar" aria-label="Herramientas">
-      <button class="tool" id="tArrange" title="Ordena las piezas sueltas alrededor del marco, bordes primero">
-        <svg viewBox="0 0 20 20"><rect x="2" y="2" width="6" height="6" rx="1.5"/><rect x="12" y="2" width="6" height="6" rx="1.5"/><rect x="2" y="12" width="6" height="6" rx="1.5"/><rect x="12" y="12" width="6" height="6" rx="1.5"/></svg><span>Ordenar</span></button>
-      <button class="tool" id="tEdges" aria-pressed="false" title="Resalta solo las piezas del borde">
-        <svg viewBox="0 0 20 20"><rect x="2.5" y="2.5" width="15" height="15" rx="2" fill="none" stroke-width="2.4"/></svg><span>Bordes</span></button>
-      <button class="tool" id="tGuide" aria-pressed="false" title="Muestra la foto tenue dentro del marco">
-        <svg viewBox="0 0 20 20"><path d="M2 15l5-6 4 4 2.5-3L18 15z"/><circle cx="14" cy="6" r="2"/></svg><span>Guía</span></button>
-      <button class="tool" id="tPhoto" aria-pressed="false" title="Muestra la foto original">
-        <svg viewBox="0 0 20 20"><rect x="2" y="4" width="16" height="12" rx="2" fill="none" stroke-width="2"/><circle cx="10" cy="10" r="3"/></svg><span>Foto</span></button>
-      <button class="tool" id="tPan" aria-pressed="false" title="Modo mano: arrastra para mover la mesa">
-        <svg viewBox="0 0 20 20"><path d="M10 1.5l2.5 3h-5zM10 18.5l-2.5-3h5zM1.5 10l3-2.5v5zM18.5 10l-3 2.5v-5z"/><circle cx="10" cy="10" r="2"/></svg><span>Mover mesa</span></button>
+    <!-- Carrera: avance de cada jugador -->
+    <aside class="race" id="racePanel" hidden aria-label="Carrera">
+      <button class="race-head" id="raceToggle" aria-expanded="true"><svg><use href="#i-flag"/></svg><b>Carrera</b><span id="raceMine"></span></button>
+      <ol class="race-list" id="raceList"></ol>
+      <button class="btn small" id="raceBack" hidden>Volver a mi tablero</button>
+    </aside>
+    <div class="watching" id="watching" hidden></div>
+
+    <!-- Estados de la partida (esperando, cuenta regresiva, tiempo agotado, final) -->
+    <div class="state" id="stateCard" hidden></div>
+    <div class="countdown" id="countdown" hidden aria-live="assertive"></div>
+    <div class="loading" id="loading" hidden><div class="spinner"></div><span>Preparando las piezas…</span></div>
+
+    <div class="tools" role="toolbar" aria-label="Herramientas" id="tools">
+      <button class="tool" data-act="tray" aria-pressed="false" title="Bandeja con las piezas sin mover"><svg><use href="#i-tray"/></svg><span>Bandeja</span></button>
+      <button class="tool" data-act="arrange" title="Ordena las piezas sueltas alrededor del marco, bordes primero"><svg><use href="#i-arrange"/></svg><span>Ordenar</span></button>
+      <button class="tool" data-act="edges" aria-pressed="false" title="Muestra solo las piezas del borde"><svg><use href="#i-edges"/></svg><span>Bordes</span></button>
+      <button class="tool d-tool" data-act="guide" aria-pressed="false" title="Muestra la foto tenue dentro del marco"><svg><use href="#i-guide"/></svg><span>Guía</span></button>
+      <button class="tool d-tool" data-act="photo" aria-pressed="false" title="Muestra la foto original"><svg><use href="#i-photo"/></svg><span>Foto</span></button>
+      <button class="tool" data-act="react" aria-expanded="false" title="Reacciones rápidas (teclas 1 a 5)"><svg><use href="#i-react"/></svg><span>Reacción</span></button>
+      <button class="tool d-tool" data-act="theme" aria-expanded="false" title="Fondo de la mesa"><svg><use href="#i-palette"/></svg><span>Mesa</span></button>
+      <button class="tool d-tool" data-act="pan" aria-pressed="false" title="Modo mano: arrastra para mover la mesa"><svg><use href="#i-hand"/></svg><span>Mover</span></button>
+      <button class="tool m-tool" data-act="more" aria-expanded="false" title="Más herramientas"><svg><use href="#i-more"/></svg><span>Más</span></button>
     </div>
 
     <div class="zoom">
-      <button id="zIn" aria-label="Acercar" title="Acercar">+</button>
-      <button id="zOut" aria-label="Alejar" title="Alejar">−</button>
-      <button id="zFit" aria-label="Ver toda la mesa" title="Ver toda la mesa"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 5.5v-4h4M14.5 5.5v-4h-4M1.5 10.5v4h4M14.5 10.5v4h-4"/></svg></button>
-      <button id="zFull" aria-label="Pantalla completa" title="Pantalla completa"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5.5 1.5h-4v4M10.5 1.5h4v4M5.5 14.5h-4v-4M10.5 14.5h4v-4"/><rect x="5" y="5" width="6" height="6" rx="1"/></svg></button>
+      <button id="zIn" class="d-only" aria-label="Acercar" title="Acercar"><svg><use href="#i-plus"/></svg></button>
+      <button id="zOut" class="d-only" aria-label="Alejar" title="Alejar"><svg><use href="#i-minus"/></svg></button>
+      <button id="zFit" aria-label="Ver toda la mesa" title="Ver toda la mesa"><svg><use href="#i-fit"/></svg></button>
+    </div>
+
+    <div class="tray" id="tray" hidden aria-label="Bandeja de piezas">
+      <div class="tray-head"><span id="trayCount">0 piezas sin mover</span><span class="muted" id="trayHint">Arrastra una pieza hacia arriba</span></div>
+      <div class="tray-list" id="trayList"></div>
+    </div>
+
+    <div class="pop" id="popReact" hidden>
+      <div class="emoji-row" id="reactRow"></div>
+      <button class="btn ghost small" id="reactEdit">Personalizar</button>
+    </div>
+    <div class="pop" id="popTheme" hidden>
+      <div class="lbl">Fondo de la mesa (solo para ti)</div>
+      <div class="themes" id="themeRow"></div>
+    </div>
+    <div class="pop" id="popMore" hidden>
+      <div class="more-grid">
+        <button class="tool" data-act="guide" aria-pressed="false"><svg><use href="#i-guide"/></svg><span>Guía</span></button>
+        <button class="tool" data-act="photo" aria-pressed="false"><svg><use href="#i-photo"/></svg><span>Foto</span></button>
+        <button class="tool" data-act="theme"><svg><use href="#i-palette"/></svg><span>Mesa</span></button>
+        <button class="tool" data-act="pan" aria-pressed="false"><svg><use href="#i-hand"/></svg><span>Mover mesa</span></button>
+      </div>
     </div>
 
     <figure class="photo" id="photo" hidden><img id="photoImg" alt="Foto original del rompecabezas"><figcaption>Foto original</figcaption></figure>
 
+    <!-- Llamada -->
+    <aside class="call" id="call" hidden aria-label="Llamada">
+      <div class="call-head"><b id="callTitle">Llamada</b><button class="icon-btn ghost small" id="callMin" aria-label="Minimizar llamada" title="Minimizar"><svg><use href="#i-minus"/></svg></button></div>
+      <div class="tiles" id="tiles"></div>
+      <button class="btn small" id="callUnmute" hidden>Toca para activar el sonido</button>
+      <div class="call-ctl">
+        <button class="round" id="cMic" aria-label="Micrófono"><svg><use href="#i-mic"/></svg></button>
+        <button class="round" id="cCam" aria-label="Cámara"><svg><use href="#i-camoff"/></svg></button>
+        <button class="round" id="cFlip" aria-label="Cambiar de cámara" hidden><svg><use href="#i-flip"/></svg></button>
+        <button class="round danger" id="cLeave" aria-label="Salir de la llamada"><svg><use href="#i-hangup"/></svg></button>
+      </div>
+    </aside>
+
     <div class="tip" id="tip" hidden>
-      <p><b>Cómo jugar.</b> Arrastra las piezas con el dedo o el ratón. Cuando una pieza llega a su lugar dentro del marco se queda fija.</p>
-      <p>Para mover la mesa usa <b>clic derecho</b>, la <b>barra espaciadora</b>, dos dedos, o el botón <b>Mover mesa</b>. La rueda hace zoom.</p>
+      <b>Cómo jugar</b>
+      <p>Arrastra las piezas con el dedo o el ratón. Cuando una llega a su lugar en el marco, se queda fija.</p>
+      <p class="d-text">Mover la mesa: clic derecho, barra espaciadora o <b>Mover</b>. La rueda hace zoom.</p>
+      <p class="m-text">Saca piezas de la <b>Bandeja</b> de abajo. Con dos dedos mueves y haces zoom.</p>
       <button class="btn small" id="tipOk">Entendido</button>
     </div>
 
-    <aside class="chat" id="chat" hidden aria-label="Chat de la sala">
-      <div class="chat-head"><b>Chat de la sala</b><button class="btn ghost small" id="chatClose">Cerrar</button></div>
+    <!-- Paneles laterales (en celular salen desde abajo) -->
+    <aside class="panel" id="chat" hidden aria-label="Chat de la sala">
+      <div class="panel-head"><b>Chat de la sala</b><button class="btn ghost small" data-close="chat">Cerrar</button></div>
       <ol class="msgs" id="msgs"></ol>
       <form class="chat-form" id="chatForm" autocomplete="off"><input id="chatInput" maxlength="240" placeholder="Escribe un mensaje…" aria-label="Mensaje"><button class="btn primary small" type="submit">Enviar</button></form>
     </aside>
 
-    <div class="done" id="done" hidden>
-      <div><strong>¡Completado!</strong><div class="muted" id="doneTime"></div></div>
-      <button class="btn" id="doneClose">Admirar</button>
-      <button class="btn primary" id="doneNew">Otra foto</button>
+    <aside class="panel" id="people" hidden aria-label="Jugadores">
+      <div class="panel-head">
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tabPlayers" aria-selected="true">Jugadores</button>
+          <button role="tab" id="tabRoom" aria-selected="false" hidden>Sala</button>
+        </div>
+        <button class="btn ghost small" data-close="people">Cerrar</button>
+      </div>
+      <div class="panel-body" id="paneP"><ol class="plist" id="plist"></ol><p class="muted" id="myRoleNote"></p></div>
+      <div class="panel-body" id="paneR" hidden>
+        <form class="stack" id="roomForm" autocomplete="off">
+          <div class="field"><label class="lbl" for="rsName">Nombre</label><input id="rsName" maxlength="40"></div>
+          <div class="field"><span class="lbl">Visibilidad</span><div class="seg seg2" id="rsVis"></div></div>
+          <div class="field"><span class="lbl">Máximo de jugadores</span><div class="seg seg4" id="rsMax"></div></div>
+          <div class="field"><span class="lbl">Quién puede empezar otra partida</span><div class="seg seg2" id="rsPhoto"></div></div>
+          <div class="field"><span class="lbl">Quién puede usar Ordenar</span><div class="seg seg2" id="rsArrange"></div></div>
+          <button class="btn primary" type="submit">Guardar cambios</button>
+        </form>
+        <div class="stack section">
+          <div class="field"><label class="lbl" for="rsPw">Contraseña</label>
+            <div class="row-in"><input id="rsPw" maxlength="40" placeholder="Nueva contraseña"><button class="btn" id="rsPwSave" type="button">Poner</button></div>
+            <div class="muted" id="rsPwState"></div>
+            <button class="btn ghost small" id="rsPwClear" type="button" hidden>Quitar contraseña</button>
+          </div>
+        </div>
+        <div class="stack section"><span class="lbl">Personas bloqueadas</span><ul class="bans" id="rsBans"></ul></div>
+        <div class="stack section" id="rsDanger">
+          <span class="lbl">Cerrar la sala</span>
+          <p class="muted">Borra la sala, la foto y el progreso para todos. No se puede deshacer.</p>
+          <button class="btn danger" type="button" id="rsDelete">Cerrar sala</button>
+          <div class="confirm" id="rsDeleteConfirm" hidden><span>¿Seguro?</span><button class="btn danger small" type="button" id="rsDeleteYes">Sí, cerrar</button><button class="btn small" type="button" id="rsDeleteNo">No</button></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Menú -->
+    <div class="menu" id="menu" hidden role="menu">
+      <button role="menuitem" data-m="share"><svg><use href="#i-share"/></svg>Invitar</button>
+      <button role="menuitem" data-m="chat"><svg><use href="#i-chat"/></svg>Chat<span class="badge" id="menuChatBadge" hidden>0</span></button>
+      <button role="menuitem" data-m="people"><svg><use href="#i-users"/></svg>Jugadores y sala</button>
+      <button role="menuitem" data-m="new"><svg><use href="#i-photo"/></svg>Nueva partida</button>
+      <button role="menuitem" data-m="video"><svg><use href="#i-video"/></svg>Video del armado</button>
+      <button role="menuitem" data-m="full"><svg><use href="#i-full"/></svg>Pantalla completa</button>
+      <button role="menuitem" data-m="help"><svg><use href="#i-help"/></svg>Cómo se juega</button>
+      <button role="menuitem" data-m="leave"><svg><use href="#i-exit"/></svg>Salir de la sala</button>
     </div>
   </main>
 </section>
 
-<!-- ============================ MODALES ============================ -->
-<div class="scrim" id="mPhoto" hidden>
-  <form class="modal" role="dialog" aria-modal="true" aria-labelledby="mPhotoT" id="photoForm">
-    <h2 id="mPhotoT">Crear sala</h2>
-    <div class="create-only grid2">
-      <div class="field"><label class="lbl" for="roomNameIn">Nombre de la sala</label><input id="roomNameIn" maxlength="40"></div>
-      <div class="field"><span class="lbl">Jugadores</span><div class="seg seg3" id="segMax"></div></div>
-      <div class="field span2"><span class="lbl">Visibilidad</span><div class="seg seg2" id="segVis"></div></div>
+<!-- ============================ ASISTENTE: CREAR SALA / NUEVA PARTIDA ============================ -->
+<div class="scrim" id="mWizard" hidden>
+  <form class="modal wide" role="dialog" aria-modal="true" aria-labelledby="wzTitle" id="wzForm" autocomplete="off">
+    <div class="wz-top">
+      <h2 id="wzTitle">Crear sala</h2>
+      <ol class="steps-bar" id="wzSteps"></ol>
     </div>
-    <label class="drop" id="drop" for="file">
-      <strong>Elige una foto</strong>
-      <span>o arrástrala aquí · JPG, PNG o WebP</span>
-      <input type="file" id="file" accept="image/*" hidden>
-    </label>
-    <div class="cropwrap" id="cropBox" hidden>
-      <canvas id="cropCv" width="340" height="340"></canvas>
-      <div class="row"><span class="lbl">Zoom</span><input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom del recorte"><button class="btn small" type="button" id="cropOther">Otra foto</button></div>
-      <div class="muted">Arrastra la foto para encuadrarla. Se recorta en cuadrado 1:1.</div>
-    </div>
-    <div class="field"><span class="lbl">Piezas</span><div class="seg seg6" id="segN"></div></div>
-    <p class="err" id="photoErr" hidden></p>
+
+    <!-- Paso 1: foto -->
+    <section class="wz-step" data-step="photo">
+      <button type="button" class="same-photo" id="wzSame" hidden><img id="wzSameImg" alt=""><span><b>Usar la misma foto</b><small>Se revuelven las piezas otra vez</small></span></button>
+      <label class="drop" id="drop" for="file">
+        <svg><use href="#i-photo"/></svg>
+        <strong>Elige una foto</strong>
+        <span>o arrástrala aquí · JPG, PNG o WebP</span>
+        <input type="file" id="file" accept="image/*" hidden>
+      </label>
+      <div class="cropwrap" id="cropBox" hidden>
+        <div class="field"><span class="lbl">Forma</span><div class="chips" id="ratioChips"></div></div>
+        <div class="crop-stage"><canvas id="cropCv" width="340" height="340"></canvas></div>
+        <div class="row"><span class="lbl">Zoom</span><input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom del recorte"><button class="btn small" type="button" id="cropOther">Otra foto</button></div>
+        <p class="muted center">Arrastra la foto para encuadrarla.</p>
+      </div>
+    </section>
+
+    <!-- Paso 2: juego -->
+    <section class="wz-step" data-step="game" hidden>
+      <div class="field"><span class="lbl">Modo de juego</span><div class="mode-cards" id="modeCards"></div></div>
+      <div class="field" id="limitField" hidden><span class="lbl" id="limitLabel">Tiempo</span><div class="chips" id="limitChips"></div></div>
+      <div class="field"><span class="lbl">Piezas <span class="opt" id="piecesNote"></span></span><div class="pieces" id="piecesGrid"></div></div>
+    </section>
+
+    <!-- Paso 3: sala -->
+    <section class="wz-step" data-step="room" hidden>
+      <div class="grid2">
+        <div class="field span2"><label class="lbl" for="roomNameIn">Nombre de la sala</label><input id="roomNameIn" maxlength="40"></div>
+        <div class="field"><span class="lbl">Visibilidad</span><div class="seg seg2" id="segVis"></div></div>
+        <div class="field"><span class="lbl">Jugadores</span><div class="seg seg4" id="segMax"></div></div>
+        <div class="field span2"><label class="lbl" for="roomPwIn">Contraseña <span class="opt">(opcional)</span></label><input id="roomPwIn" maxlength="40" placeholder="Sin contraseña" autocomplete="off"></div>
+      </div>
+      <p class="muted">Serás el dueño de la sala: podrás invitar, poner contraseña y administrar a los jugadores.</p>
+    </section>
+
+    <p class="err" id="wzErr" hidden></p>
     <div class="foot">
-      <div class="muted" id="photoWarn"></div>
-      <div class="btns"><button class="btn" type="button" id="photoCancel">Cancelar</button><button class="btn primary" type="submit" id="photoGo" disabled>Crear sala</button></div>
+      <button class="btn" type="button" id="wzBack">Cancelar</button>
+      <div class="muted" id="wzSummary"></div>
+      <button class="btn primary" type="submit" id="wzNext" disabled>Siguiente</button>
     </div>
   </form>
 </div>
 
+<!-- ============================ OTROS MODALES ============================ -->
 <div class="scrim" id="mShare" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mShareT">
     <h2 id="mShareT">Invita a alguien</h2>
     <p class="muted">Comparte este enlace o dile el código. Entra desde cualquier navegador, sin cuenta.</p>
     <div class="share-code" id="shareCode">·····</div>
-    <div class="share-row"><input id="shareLink" readonly aria-label="Enlace de la sala"><button class="btn primary" id="shareCopy">Copiar enlace</button></div>
-    <div class="foot"><span class="muted" id="shareInfo"></span><div class="btns"><button class="btn" id="shareClose">Cerrar</button></div></div>
+    <div class="share-row"><input id="shareLink" readonly aria-label="Enlace de la sala"><button class="btn primary" id="shareCopy">Copiar enlace</button><button class="btn" id="shareNative" hidden>Compartir…</button></div>
+    <div class="foot"><span class="muted" id="shareInfo"></span><button class="btn" data-close="mShare">Cerrar</button></div>
+  </div>
+</div>
+
+<div class="scrim" id="mPass" hidden>
+  <form class="modal narrow" role="dialog" aria-modal="true" aria-labelledby="mPassT" id="passForm" autocomplete="off">
+    <h2 id="mPassT">Sala con contraseña</h2>
+    <p class="muted" id="passMsg">Escribe la contraseña que te dio el administrador.</p>
+    <input id="passIn" type="password" maxlength="40" aria-label="Contraseña">
+    <div class="foot"><button class="btn" type="button" id="passCancel">Volver</button><button class="btn primary" type="submit">Entrar</button></div>
+  </form>
+</div>
+
+<div class="scrim" id="mCall" hidden>
+  <div class="modal narrow" role="dialog" aria-modal="true" aria-labelledby="mCallT">
+    <h2 id="mCallT">Entrar a la llamada</h2>
+    <p class="muted" id="callInfo">Hablen mientras arman. El navegador te pedirá permiso para usar el micrófono (y la cámara, si la eliges).</p>
+    <div class="call-choice">
+      <button class="choice" id="joinVideo"><svg><use href="#i-cam"/></svg><b>Con cámara</b><span>Voz y video</span></button>
+      <button class="choice" id="joinAudio"><svg><use href="#i-mic"/></svg><b>Solo voz</b><span>Sin video</span></button>
+    </div>
+    <p class="err" id="callErr" hidden></p>
+    <div class="foot"><span class="muted">Hasta 6 personas a la vez.</span><button class="btn" data-close="mCall">Cancelar</button></div>
+  </div>
+</div>
+
+<div class="scrim" id="mVideo" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mVideoT">
+    <h2 id="mVideoT">Video del armado</h2>
+    <p class="muted" id="videoMsg">Se reproduce el armado en cámara rápida y se graba como video. Deja esta pantalla abierta mientras se graba.</p>
+    <div class="video-stage"><canvas id="tlCanvas" hidden></canvas><video id="tlVideo" controls playsinline hidden></video></div>
+    <div class="progress" id="tlProgress" hidden><i></i></div>
+    <p class="err" id="videoErr" hidden></p>
+    <div class="foot">
+      <button class="btn" data-close="mVideo" id="videoClose">Cerrar</button>
+      <div class="btns">
+        <button class="btn" id="videoShare" hidden>Compartir</button>
+        <a class="btn primary" id="videoDownload" hidden download>Descargar</a>
+        <button class="btn primary" id="videoGo">Crear video</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="mHelp" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mHelpT">
+    <h2 id="mHelpT">Cómo se juega</h2>
+    <div class="help">
+      <h3>Modos</h3>
+      <ul>
+        <li><b>Clásico:</b> todos arman el mismo rompecabezas, sin reloj.</li>
+        <li><b>Contrarreloj:</b> todos juntos contra el tiempo. Si se acaba, pueden seguir sin límite o reintentar.</li>
+        <li><b>Carrera:</b> cada quien arma su copia. Ves el avance de los demás y, al terminar, puedes mirar sus tableros.</li>
+      </ul>
+      <h3>Controles</h3>
+      <ul>
+        <li><b>Mover piezas:</b> arrástralas. Las que llegan a su lugar en el marco se quedan fijas.</li>
+        <li><b>Mover la mesa:</b> clic derecho, barra espaciadora, dos dedos o el botón <b>Mover</b>.</li>
+        <li><b>Zoom:</b> rueda del ratón o pellizcar con dos dedos.</li>
+        <li><b>Bandeja:</b> fila con las piezas sin mover; arrástralas hacia arriba.</li>
+        <li><b>Ordenar:</b> acomoda las piezas sueltas alrededor del marco, bordes primero.</li>
+        <li><b>Reacciones:</b> teclas 1 a 5 o el botón <b>Reacción</b>.</li>
+      </ul>
+      <h3>Puntos</h3>
+      <p>1 punto por cada encaje y 1 por cada pieza que dejas en su lugar. Al terminar hay podio.</p>
+    </div>
+    <div class="foot"><span></span><button class="btn primary" data-close="mHelp">Entendido</button></div>
+  </div>
+</div>
+
+<div class="scrim" id="mEmoji" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mEmojiT">
+    <h2 id="mEmojiT">Tus reacciones</h2>
+    <p class="muted">Toca un espacio de arriba y luego elige su emoji. Se guardan en este dispositivo.</p>
+    <div class="slots" id="emojiSlots"></div>
+    <div class="emoji-grid" id="emojiGrid"></div>
+    <div class="foot"><button class="btn ghost small" id="emojiReset">Restablecer</button><button class="btn primary" id="emojiDone">Listo</button></div>
+  </div>
+</div>
+
+<div class="scrim" id="mInstall" hidden>
+  <div class="modal narrow" role="dialog" aria-modal="true" aria-labelledby="mInstallT">
+    <h2 id="mInstallT">Instalar en tu iPhone</h2>
+    <ol class="steps"><li>Toca el botón <b>Compartir</b> de Safari (el cuadrado con la flecha).</li><li>Elige <b>Agregar a pantalla de inicio</b>.</li><li>Toca <b>Agregar</b>. El icono aparece junto a tus apps.</li></ol>
+    <div class="foot"><span></span><button class="btn primary" data-close="mInstall">Entendido</button></div>
   </div>
 </div>
 
 <div class="toast" id="toast" hidden role="status"></div>
+<div class="fx" id="fx" aria-hidden="true"></div>
 
 <script type="module" src="/js/main.js"></script>
 </body>

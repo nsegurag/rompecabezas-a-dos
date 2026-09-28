@@ -1,0 +1,17 @@
+{
+  "name": "Rompecabezas a Dos",
+  "short_name": "Rompecabezas",
+  "description": "Sube tu foto, crea una sala y armen el rompecabezas juntos en tiempo real.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#241c2a",
+  "theme_color": "#241c2a",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
