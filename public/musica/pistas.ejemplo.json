@@ -1,0 +1,6 @@
+{
+  "pistas": [
+    { "titulo": "Nombre del tema", "autor": "Nombre del artista", "src": "/musica/piano-lluvia.mp3" },
+    { "titulo": "Otro tema", "autor": "Otro artista", "src": "/musica/tarde-tranquila.mp3" }
+  ]
+}

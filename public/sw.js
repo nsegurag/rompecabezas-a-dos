@@ -1,8 +1,8 @@
 // Service worker: permite instalar la app y abrirla rápido.
 // Las páginas y el código se piden primero a la red (así siempre ves la última versión)
 // y solo si no hay conexión se usa la copia guardada.
-const CACHE = 'rz-v4';
-const SHELL = ['/', '/css/styles.css', '/js/main.js', '/js/game.js', '/js/geometry.js', '/js/cropper.js', '/js/net.js', '/js/rtc.js', '/js/timelapse.js',
+const CACHE = 'rz-v5';
+const SHELL = ['/', '/css/styles.css', '/js/main.js', '/js/game.js', '/js/geometry.js', '/js/cropper.js', '/js/net.js', '/js/rtc.js', '/js/timelapse.js', '/js/music.js',
   '/favicon.svg', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -16,7 +16,9 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/') || url.pathname === '/ws' || url.pathname === '/health') return;
   // Fotos de rompecabezas: nunca cambian, se guardan al primer uso.
-  if (url.pathname.startsWith('/img/')) {
+  // Galería y música: pesadas y fijas; audio y rangos van directo a la red (Safari los pide con Range).
+  if (url.pathname.startsWith('/musica/') && !url.pathname.endsWith('.json')) return;
+  if (url.pathname.startsWith('/img/') || (url.pathname.startsWith('/galeria/') && !url.pathname.endsWith('.json'))) {
     e.respondWith(caches.open(CACHE).then(async c => (await c.match(req)) || fetch(req).then(r => { if (r.ok) c.put(req, r.clone()); return r; })));
     return;
   }

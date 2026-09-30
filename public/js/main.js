@@ -3,6 +3,7 @@ import { Net } from './net.js';
 import { Cropper } from './cropper.js';
 import { Call } from './rtc.js';
 import { makeTimelapse, timelapseSupported } from './timelapse.js';
+import { createMusic } from './music.js';
 
 /* =========================================================================
    Constantes y utilidades
@@ -68,7 +69,7 @@ function seg(box, items, get, set) {
 }
 // Cerrar modales y paneles con los botones "Cerrar" (data-close) y tocando fuera.
 document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) $(c.dataset.close).hidden = true; });
-document.querySelectorAll('.scrim').forEach(s => s.addEventListener('click', e => { if (e.target === s && s.id !== 'mVideo') s.hidden = true; }));
+document.querySelectorAll('.scrim').forEach(s => s.addEventListener('click', e => { if (e.target === s && s.id !== 'mVideo' && s.id !== 'mName') s.hidden = true; }));
 
 /* =========================================================================
    Perfil e identidad
@@ -93,6 +94,7 @@ function renderSwatches() {
   });
 }
 renderSwatches();
+const music = createMusic();
 
 /* =========================================================================
    Inicio: lista de salas
@@ -119,7 +121,7 @@ async function loadRooms() {
   } catch (e) { box.textContent = ''; box.append(el('p', 'empty', 'No se pudo cargar la lista de salas. ' + e.message)); }
 }
 function showLobby() {
-  inGame = false; $('game').hidden = true; $('lobby').hidden = false; document.title = 'Rompecabezas a Dos';
+  music.disarm(); inGame = false; $('game').hidden = true; $('lobby').hidden = false; document.title = 'Rompecabezas a Dos';
   loadRooms(); clearInterval(lobbyTimer); lobbyTimer = setInterval(loadRooms, 10000);
 }
 $('btnRefresh').onclick = loadRooms;
@@ -183,9 +185,40 @@ net.on('fatal', m => {
 });
 function expelled(text) { leaveCall(); game.stop(); clearInterval(ticker); toast(text); history.replaceState(null, '', '/'); showLobby(); }
 
-async function enterRoom(code) {
+/* Pantalla de nombre: aparece cada vez que se entra a una sala (con el nombre y color guardados ya puestos). */
+function askIdentity(code) {
+  return new Promise(resolve => {
+    let color = me.color;
+    const paint = () => {
+      const box = $('nameColors'); box.textContent = '';
+      COLORS.forEach(c => {
+        const b = el('button', 'swatch'); b.type = 'button'; b.style.background = c;
+        b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(c === color)); b.setAttribute('aria-label', 'Color ' + c);
+        b.onclick = () => { color = c; paint(); };
+        box.append(b);
+      });
+    };
+    paint();
+    $('nameRoom').textContent = `Vas a entrar a la sala ${code}.`;
+    $('nameIn').value = ls.get('rz_name') ? me.name : '';
+    $('mName').hidden = false; setTimeout(() => { $('nameIn').focus(); $('nameIn').select(); }, 60);
+    const done = ok => { $('mName').hidden = true; $('nameForm').onsubmit = null; $('nameCancel').onclick = null; resolve(ok); };
+    $('nameForm').onsubmit = e => {
+      e.preventDefault();
+      const v = clean($('nameIn').value).trim();
+      if (!v) { $('nameIn').focus(); return; }
+      me.name = v; me.color = color; saveMe();
+      $('meName').value = me.name; renderSwatches();
+      done(true);
+    };
+    $('nameCancel').onclick = () => done(false);
+  });
+}
+
+async function enterRoom(code, opts = {}) {
   try { await api('/api/rooms/' + code); }
   catch (e) { toast(e.message); if (inGame) showLobby(); return; }
+  if (!opts.skipName && !(await askIdentity(code))) { if (!inGame) { history.replaceState(null, '', '/'); showLobby(); } return; }
   clearInterval(lobbyTimer);
   currentCode = code;
   if (new URLSearchParams(location.search).get('sala') !== code) history.pushState(null, '', '/?sala=' + code);
@@ -195,6 +228,7 @@ async function enterRoom(code) {
   $('roomCode').textContent = code; $('roomName').textContent = 'Conectando…'; $('players').textContent = ''; $('msgs').textContent = '';
   document.querySelectorAll('[data-act="photo"],[data-act="guide"],[data-act="edges"],[data-act="pan"]').forEach(b => setPressed(b, false));
   game.start(code);
+  music.autoplay();
   applyTheme(ls.get('rz_theme') || 'ciruela');
   const trayPref = ls.get('rz_tray');
   setTray(trayPref ? trayPref === '1' : isMobile());
@@ -385,7 +419,7 @@ $('raceToggle').onclick = () => { const b = $('raceToggle'); b.setAttribute('ari
 $('raceBack').onclick = () => game.watch(null);
 
 /* ---------------- herramientas ---------------- */
-const pops = ['popReact', 'popTheme', 'popMore', 'menu'];
+const pops = ['popReact', 'popTheme', 'popMore', 'popMusic', 'menu'];
 function closePops(except) {
   for (const id of pops) if (id !== except) $(id).hidden = true;
   document.querySelectorAll('[data-act="react"]').forEach(b => b.setAttribute('aria-expanded', String(!$('popReact').hidden)));
@@ -403,6 +437,7 @@ const ACTIONS = {
   photo: () => { const p = $('photo'); p.hidden = !p.hidden; pressAll('photo', !p.hidden); if (!p.hidden) closePanels(); },
   react: () => togglePop('popReact'),
   theme: () => togglePop('popTheme'),
+  music: () => togglePop('popMusic'),
   pan: () => pressAll('pan', game.togglePan()),
   more: () => togglePop('popMore'),
 };
@@ -412,6 +447,26 @@ document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click',
   ACTIONS[act] && ACTIONS[act]();
 }));
 $('cv').addEventListener('pointerdown', () => { closePops(); });
+
+/* ---------------- música para armar ---------------- */
+function renderMusic() {
+  const st = music.state, box = $('musicMoods'); box.textContent = '';
+  const moods = [...music.moods];
+  if (music.trackCount) moods.push({ id: 'pistas', label: 'Pistas grabadas', hint: 'Una mezcla al azar, sin repetir la anterior' });
+  for (const m of moods) {
+    const b = el('button', 'mood'); b.type = 'button'; b.setAttribute('aria-pressed', String(st.mood === m.id));
+    b.append(m.label, el('small', '', m.hint)); b.onclick = () => { music.setMood(m.id); };
+    box.append(b);
+  }
+  $('musicToggle').textContent = st.on ? 'Pausar' : 'Reproducir';
+  $('musicVol').value = st.vol; $('musicVolN').textContent = st.vol + '%';
+  pressAll('music', st.on && music.playing);
+  const now = st.mood === 'pistas' && music.trackNow;
+  $('musicNow').hidden = !now; if (now) $('musicNow').textContent = '♪ ' + now.titulo + (now.autor ? ' · ' + now.autor : '');
+}
+$('musicToggle').onclick = () => music.toggle();
+$('musicVol').addEventListener('input', e => music.setVol(+e.target.value));
+music.onChange(renderMusic); music.probe(); renderMusic();
 $('zIn').onclick = () => game.zoomIn(); $('zOut').onclick = () => game.zoomOut(); $('zFit').onclick = () => game.fit();
 
 /* ---------------- menú ---------------- */
@@ -700,12 +755,12 @@ const remoteStreams = new Map(), peerStates = new Map();
 let localStream = null;
 const call = new Call(net, {
   onLocal(stream, state) { localStream = stream; renderCall(); },
-  onRemote(id, stream) { if (stream) remoteStreams.set(id, stream); else remoteStreams.delete(id); renderCall(); },
-  onSpeaking(id, v) { const t = document.querySelector(`.tile[data-id="${id === 'me' ? 'me' : id}"]`); if (t) t.classList.toggle('speaking', v); },
+  onRemote(id, stream) { if (stream) remoteStreams.set(id, stream); else { remoteStreams.delete(id); music.speaking(id, false); } renderCall(); },
+  onSpeaking(id, v) { music.speaking(id, v); const t = document.querySelector(`.tile[data-id="${id === 'me' ? 'me' : id}"]`); if (t) t.classList.toggle('speaking', v); },
   onPeerState(id, s) { peerStates.set(id, s); renderCall(); },
   onError: toast,
 });
-function leaveCall() { if (call.inCall) call.leave(); $('call').hidden = true; remoteStreams.clear(); }
+function leaveCall() { music.resetSpeakers(); if (call.inCall) call.leave(); $('call').hidden = true; remoteStreams.clear(); }
 function renderCall() {
   const inCall = call.inCall, players = game.players || [];
   const others = players.filter(p => p.id !== game.you && p.media && p.media.call);
@@ -812,9 +867,44 @@ $('videoClose').addEventListener('click', () => { if (videoAbort) videoAbort.abo
    Asistente: crear sala / nueva partida
    ========================================================================= */
 const cropper = new Cropper($('cropCv'), $('cropZoom'));
+/* Galería de imágenes clásicas (opcional: aparece si existe /galeria/galeria.json) */
+let gallery = null, galleryTried = false;
+const wzSrc = { tab: 'upload', cat: 'todas' };
+async function loadGallery() {
+  if (galleryTried) return; galleryTried = true;
+  try {
+    const r = await fetch('/galeria/galeria.json');
+    if (r.ok && /json/.test(r.headers.get('content-type') || '')) { const j = await r.json(); if (Array.isArray(j.imagenes) && j.imagenes.length) gallery = j; }
+  } catch { }
+  if (gallery && !$('mWizard').hidden) renderWizard();
+}
+function renderGallery() {
+  const cats = [{ id: 'todas', nombre: 'Todas' }, ...(gallery.categorias || [])];
+  const cbox = $('galCats'); cbox.textContent = '';
+  for (const c of cats) { const b = el('button', '', c.nombre); b.type = 'button'; b.setAttribute('aria-pressed', String(wzSrc.cat === c.id)); b.onclick = () => { wzSrc.cat = c.id; renderGallery(); }; cbox.append(b); }
+  const grid = $('galGrid'); grid.textContent = '';
+  for (const it of gallery.imagenes.filter(i => wzSrc.cat === 'todas' || i.cat === wzSrc.cat)) {
+    const b = el('button', 'gal-item'); b.type = 'button';
+    b.title = `${it.titulo}${it.autor ? ' · ' + it.autor : ''}${it.licencia ? ' · ' + it.licencia : ''}`;
+    const img = el('img'); img.src = it.mini || it.src; img.alt = it.titulo; img.loading = 'lazy';
+    b.append(img, el('span', '', it.titulo)); b.onclick = () => pickGallery(it, b);
+    grid.append(b);
+  }
+}
+async function pickGallery(it, btn) {
+  btn.classList.add('busy');
+  try {
+    const r = await fetch(it.src); if (!r.ok) throw new Error();
+    const blob = await r.blob();
+    await loadFile(new File([blob], it.id + '.jpg', { type: blob.type || 'image/jpeg' }));
+  } catch { $('wzErr').textContent = 'No se pudo cargar esa imagen. Prueba con otra.'; $('wzErr').hidden = false; }
+  finally { btn.classList.remove('busy'); }
+}
+document.querySelectorAll('#srcTabs [data-src]').forEach(b => b.addEventListener('click', () => { wzSrc.tab = b.dataset.src; renderWizard(); }));
 const STEP_LABELS = { photo: 'Foto', game: 'Juego', room: 'Sala' };
 const wz = { kind: 'create', steps: [], i: 0, same: false, ratio: '1:1', pieces: 64, mode: 'classic', limit: 10, isPublic: false, max: 4 };
 function openWizard(kind) {
+  loadGallery();
   wz.kind = kind; wz.i = 0;
   wz.steps = kind === 'create' ? ['photo', 'game', 'room'] : ['photo', 'game'];
   const pz = game.puzzle;
@@ -833,7 +923,11 @@ function renderWizard() {
   document.querySelectorAll('.wz-step').forEach(s => { s.hidden = s.dataset.step !== step; });
   // Paso foto
   setPressed($('wzSame'), wz.same);
-  $('drop').hidden = wz.same || !!cropper.img; $('cropBox').hidden = wz.same || !cropper.img;
+  const picking = !wz.same && !cropper.img, useGal = !!gallery && wzSrc.tab === 'gallery';
+  $('srcTabs').hidden = !(gallery && picking); $('gallery').hidden = !(picking && useGal); $('cropGal').hidden = !gallery;
+  document.querySelectorAll('#srcTabs [data-src]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.src === (useGal ? 'gallery' : 'upload'))));
+  if (picking && useGal) renderGallery();
+  $('drop').hidden = wz.same || !!cropper.img || useGal; $('cropBox').hidden = wz.same || !cropper.img;
   if (!wz.same && cropper.img) { renderRatios(); requestAnimationFrame(() => cropper.draw()); }
   // Paso juego
   renderModes(); renderLimits(); renderPieces();
@@ -913,6 +1007,7 @@ const drop = $('drop');
 ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
 $('cropOther').onclick = () => { $('file').value = ''; $('file').click(); };
+$('cropGal').onclick = () => { cropper.reset(); $('file').value = ''; wzSrc.tab = 'gallery'; renderWizard(); };
 window.addEventListener('resize', () => { if (!$('mWizard').hidden && cropper.img) cropper.draw(); });
 $('wzBack').onclick = () => { if (wz.i === 0) { $('mWizard').hidden = true; return; } wz.i--; renderWizard(); };
 $('wzForm').addEventListener('submit', async e => {
@@ -927,7 +1022,7 @@ $('wzForm').addEventListener('submit', async e => {
       const password = $('roomPwIn').value.trim();
       const { code } = await api('/api/rooms', { method: 'POST', body: JSON.stringify({ ...opts, ratio: wz.ratio, image, uid, password, name: $('roomNameIn').value, public: wz.isPublic, max: wz.max }) });
       if (password) ls.set(pwKey(code), password);
-      $('mWizard').hidden = true; resetPhoto(); await enterRoom(code);
+      $('mWizard').hidden = true; resetPhoto(); await enterRoom(code, { skipName: true });
     } else {
       await api(`/api/rooms/${game.room.code}/puzzle`, { method: 'POST', body: JSON.stringify({ ...opts, ratio: wz.ratio, image, sameImage: wz.same, uid, by: me.name }) });
       $('mWizard').hidden = true; resetPhoto();

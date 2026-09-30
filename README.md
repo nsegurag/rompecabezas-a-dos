@@ -34,6 +34,12 @@ Rompecabezas online en tiempo real. Subes una foto, eliges su forma y cuántas p
 - Ajustes: nombre, pública o privada, máximo de jugadores (2, 4, 8 o 12), contraseña, quién puede empezar otra partida y quién puede usar *Ordenar*. El dueño puede cerrar la sala.
 - Iniciar la partida (Contrarreloj y Carrera), reintentar o pedir revancha: lo hacen los admins, o cualquiera si no hay un admin conectado.
 
+## Galería, nombre y música
+
+- **Galería de imágenes**: en el paso "Foto" del asistente aparece la pestaña *Galería* con 25 imágenes libres (pintura clásica, paisajes, animales, ciudades y pueblos, flores). Para crearla, corre una vez en tu computadora `node tools/descargar-galeria.mjs`; baja las fotos de Wikimedia Commons a `public/galeria/` y escribe `galeria.json` y `CREDITOS.md`. Si la carpeta está vacía, la pestaña no aparece. Para cambiar una imagen, edita su línea en la lista del script y vuelve a correrlo.
+- **Nombre al entrar**: al entrar a una sala por código, enlace o lista pública se pide el nombre y el color (ya vienen puestos los guardados).
+- **Música para armar**: botón *Música* en la barra de herramientas. Tres ambientes que se componen solos (Piano suave, Noche tranquila, Bosque), volumen y pausa por persona, y baja sola cuando alguien habla en la llamada. Opcionalmente, pistas mp3 propias: mira `public/musica/LEEME.md`.
+
 ## Probarlo en tu computadora
 
 Necesitas [Node.js](https://nodejs.org) 18 o más reciente.

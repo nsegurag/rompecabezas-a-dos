@@ -292,16 +292,28 @@ function rateLimited(ip) {
 }
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon',
-  '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
-function sendFile(res, file, cache) {
+  '.json': 'application/json', '.webmanifest': 'application/manifest+json',
+  '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4' };
+// Galería y música casi nunca cambian: se guardan en el navegador una semana.
+const STATIC_CACHE = /^\/(galeria|musica)\/.+\.(jpg|jpeg|png|webp|mp3|ogg|m4a)$/i;
+function sendFile(res, file, cache, req) {
   fs.stat(file, (err, st) => {
     if (err || !st.isFile()) {
-      if (cache === 'img') { res.writeHead(404); return res.end(); }
+      if (cache === 'img' || cache === 'media') { res.writeHead(404); return res.end(); }
       return sendFile(res, path.join(PUBLIC_DIR, 'index.html'), 'no-cache');
     }
-    const headers = { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream',
-      'Content-Length': st.size, 'Cache-Control': cache === 'img' ? 'public, max-age=31536000, immutable' : 'no-cache' };
-    res.writeHead(200, headers);
+    const headers = { 'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Accept-Ranges': 'bytes',
+      'Cache-Control': cache === 'img' ? 'public, max-age=31536000, immutable' : cache === 'media' ? 'public, max-age=604800' : 'no-cache' };
+    // Rangos de bytes: Safari los exige para reproducir audio.
+    const rg = req && /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    if (rg && (rg[1] || rg[2])) {
+      let a = rg[1] ? Number(rg[1]) : Math.max(0, st.size - Number(rg[2])), b = rg[1] && rg[2] ? Number(rg[2]) : st.size - 1;
+      b = Math.min(b, st.size - 1);
+      if (a > b || a >= st.size) { res.writeHead(416, { 'Content-Range': `bytes */${st.size}` }); return res.end(); }
+      res.writeHead(206, { ...headers, 'Content-Range': `bytes ${a}-${b}/${st.size}`, 'Content-Length': b - a + 1 });
+      return fs.createReadStream(file, { start: a, end: b }).pipe(res);
+    }
+    res.writeHead(200, { ...headers, 'Content-Length': st.size });
     fs.createReadStream(file).pipe(res);
   });
 }
@@ -383,7 +395,7 @@ const server = http.createServer(async (req, res) => {
 
     const file = path.normalize(path.join(PUBLIC_DIR, decodeURIComponent(p)));
     if (!file.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end(); }
-    return sendFile(res, p.endsWith('/') ? path.join(file, 'index.html') : file, 'no-cache');
+    return sendFile(res, p.endsWith('/') ? path.join(file, 'index.html') : file, STATIC_CACHE.test(p) ? 'media' : 'no-cache', req);
   } catch (e) {
     if (!e.expose) console.error(e);
     json(res, e.status || 500, { error: e.expose ? e.message : 'Error del servidor.' });
