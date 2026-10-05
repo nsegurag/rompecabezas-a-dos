@@ -1,7 +1,7 @@
 // Service worker: permite instalar la app y abrirla rápido.
 // Las páginas y el código se piden primero a la red (así siempre ves la última versión)
 // y solo si no hay conexión se usa la copia guardada.
-const CACHE = 'rz-v6';
+const CACHE = 'rz-v5';
 const SHELL = ['/', '/css/styles.css', '/js/main.js', '/js/game.js', '/js/geometry.js', '/js/cropper.js', '/js/net.js', '/js/rtc.js', '/js/timelapse.js', '/js/music.js',
   '/favicon.svg', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 

@@ -1,0 +1,276 @@
+{
+ "categorias": [
+  {
+   "id": "pintura",
+   "nombre": "Pintura clásica"
+  },
+  {
+   "id": "paisajes",
+   "nombre": "Paisajes"
+  },
+  {
+   "id": "animales",
+   "nombre": "Animales"
+  },
+  {
+   "id": "ciudades",
+   "nombre": "Ciudades y pueblos"
+  },
+  {
+   "id": "flores",
+   "nombre": "Flores y jardines"
+  }
+ ],
+ "imagenes": [
+  {
+   "id": "01-la-noche-estrellada",
+   "cat": "pintura",
+   "titulo": "La noche estrellada",
+   "autor": "Vincent van Gogh",
+   "licencia": "Public domain",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg",
+   "src": "/galeria/01-la-noche-estrellada.jpg",
+   "mini": "/galeria/mini/01-la-noche-estrellada.jpg"
+  },
+  {
+   "id": "02-la-gran-ola-de-kanagawa",
+   "cat": "pintura",
+   "titulo": "La gran ola de Kanagawa",
+   "autor": "After Katsushika Hokusai",
+   "licencia": "Public domain",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Great_Wave_off_Kanagawa2.jpg",
+   "src": "/galeria/02-la-gran-ola-de-kanagawa.jpg",
+   "mini": "/galeria/mini/02-la-gran-ola-de-kanagawa.jpg"
+  },
+  {
+   "id": "03-el-caminante-sobre-el-mar-de-nubes",
+   "cat": "pintura",
+   "titulo": "El caminante sobre el mar de nubes",
+   "autor": "Caspar David Friedrich",
+   "licencia": "Public domain",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Caspar_David_Friedrich_-_Wanderer_above_the_sea_of_fog.jpg",
+   "src": "/galeria/03-el-caminante-sobre-el-mar-de-nubes.jpg",
+   "mini": "/galeria/mini/03-el-caminante-sobre-el-mar-de-nubes.jpg"
+  },
+  {
+   "id": "04-los-nenufares",
+   "cat": "pintura",
+   "titulo": "Los nenúfares",
+   "autor": "Claude Monet",
+   "licencia": "Public domain",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Water_Lilies_-_1906,_Ryerson.jpg",
+   "src": "/galeria/04-los-nenufares.jpg",
+   "mini": "/galeria/mini/04-los-nenufares.jpg"
+  },
+  {
+   "id": "05-el-nacimiento-de-venus",
+   "cat": "pintura",
+   "titulo": "El nacimiento de Venus",
+   "autor": "Sandro Botticelli",
+   "licencia": "Public domain",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project_-_edited.jpg",
+   "src": "/galeria/05-el-nacimiento-de-venus.jpg",
+   "mini": "/galeria/mini/05-el-nacimiento-de-venus.jpg"
+  },
+  {
+   "id": "06-la-joven-de-la-perla",
+   "cat": "pintura",
+   "titulo": "La joven de la perla",
+   "autor": "Johannes Vermeer",
+   "licencia": "Public domain",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Meisje_met_de_parel.jpg",
+   "src": "/galeria/06-la-joven-de-la-perla.jpg",
+   "mini": "/galeria/mini/06-la-joven-de-la-perla.jpg"
+  },
+  {
+   "id": "07-tarde-de-domingo-en-la-grande-jatte",
+   "cat": "pintura",
+   "titulo": "Tarde de domingo en la Grande Jatte",
+   "autor": "Georges Seurat",
+   "licencia": "Public domain",
+   "fuente": "https://commons.wikimedia.org/wiki/File:A_Sunday_on_La_Grande_Jatte,_Georges_Seurat,_1884.jpg",
+   "src": "/galeria/07-tarde-de-domingo-en-la-grande-jatte.jpg",
+   "mini": "/galeria/mini/07-tarde-de-domingo-en-la-grande-jatte.jpg"
+  },
+  {
+   "id": "08-matterhorn-y-su-reflejo",
+   "cat": "paisajes",
+   "titulo": "Matterhorn y su reflejo",
+   "autor": "NOTE: This image is a panorama consisting of multiple frames that were merged or stitched in software. As a result, this",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:CH.VS.Zermatt_Sunnegga_Grindjisee_Matterhorn_9034_16x9-R_16K.jpg",
+   "src": "/galeria/08-matterhorn-y-su-reflejo.jpg",
+   "mini": "/galeria/mini/08-matterhorn-y-su-reflejo.jpg"
+  },
+  {
+   "id": "09-via-lactea-sobre-la-montana",
+   "cat": "paisajes",
+   "titulo": "Vía Láctea sobre la montaña",
+   "autor": "Giles Laurent",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:018_Human_looking_at_the_stars_during_Perseids_with_the_Milky_Way_in_the_background_Photo_by_Giles_Laurent.jpg",
+   "src": "/galeria/09-via-lactea-sobre-la-montana.jpg",
+   "mini": "/galeria/mini/09-via-lactea-sobre-la-montana.jpg"
+  },
+  {
+   "id": "10-bosque-en-otono",
+   "cat": "paisajes",
+   "titulo": "Bosque en otoño",
+   "autor": "Ermell",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Bamberg_Bruderwald_Herbst-20151102-RM-110637.jpg",
+   "src": "/galeria/10-bosque-en-otono.jpg",
+   "mini": "/galeria/mini/10-bosque-en-otono.jpg"
+  },
+  {
+   "id": "11-dolomitas",
+   "cat": "paisajes",
+   "titulo": "Dolomitas",
+   "autor": "This Photo was taken by Wolfgang Moroder. Feel free to use my photos, but please mention me as the author and send me a ",
+   "licencia": "CC BY-SA 3.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Drei_Zinnen_Tre_Cime_di_Lavaredo_Dolomites.jpg",
+   "src": "/galeria/11-dolomitas.jpg",
+   "mini": "/galeria/mini/11-dolomitas.jpg"
+  },
+  {
+   "id": "12-torres-del-paine",
+   "cat": "paisajes",
+   "titulo": "Torres del Paine",
+   "autor": "Pedro Szekely from Los Angeles, USA",
+   "licencia": "CC BY-SA 2.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Cuernos_del_Paine_in_Torres_del_Paine_National_Park.jpg",
+   "src": "/galeria/12-torres-del-paine.jpg",
+   "mini": "/galeria/mini/12-torres-del-paine.jpg"
+  },
+  {
+   "id": "13-zorro-rojo",
+   "cat": "animales",
+   "titulo": "Zorro rojo",
+   "autor": "Gregory \"Slobirdr\" Smith",
+   "licencia": "CC BY-SA 2.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Alaska_Red_Fox_(Vulpes_vulpes).jpg",
+   "src": "/galeria/13-zorro-rojo.jpg",
+   "mini": "/galeria/mini/13-zorro-rojo.jpg"
+  },
+  {
+   "id": "14-tigre-de-bengala",
+   "cat": "animales",
+   "titulo": "Tigre de Bengala",
+   "autor": "Charles J. Sharp",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Bengal_tiger_(Panthera_tigris_tigris)_female_3.jpg",
+   "src": "/galeria/14-tigre-de-bengala.jpg",
+   "mini": "/galeria/mini/14-tigre-de-bengala.jpg"
+  },
+  {
+   "id": "15-elefante-africano",
+   "cat": "animales",
+   "titulo": "Elefante africano",
+   "autor": "Charles J. Sharp",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:African_bush_elephants_(Loxodonta_africana)_female_with_six-week-old_baby.jpg",
+   "src": "/galeria/15-elefante-africano.jpg",
+   "mini": "/galeria/mini/15-elefante-africano.jpg"
+  },
+  {
+   "id": "16-guacamaya-roja",
+   "cat": "animales",
+   "titulo": "Guacamaya roja",
+   "autor": "Charles J. Sharp",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Scarlet_macaw_(Ara_macao_cyanopterus)_Copan.jpg",
+   "src": "/galeria/16-guacamaya-roja.jpg",
+   "mini": "/galeria/mini/16-guacamaya-roja.jpg"
+  },
+  {
+   "id": "17-jirafa",
+   "cat": "animales",
+   "titulo": "Jirafa",
+   "autor": "Dietmar Rabich",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Makalali_Game_Reserve_(ZA),_Giraffe_--_2024_--_1124.jpg",
+   "src": "/galeria/17-jirafa.jpg",
+   "mini": "/galeria/mini/17-jirafa.jpg"
+  },
+  {
+   "id": "18-gran-canal-de-venecia",
+   "cat": "ciudades",
+   "titulo": "Gran Canal de Venecia",
+   "autor": "This Photo was taken by Wolfgang Moroder. Feel free to use my photos, but please mention me as the author and send me a ",
+   "licencia": "CC BY-SA 3.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Canal_Grande_Chiesa_della_Salute_e_Dogana_dal_ponte_dell_Accademia.jpg",
+   "src": "/galeria/18-gran-canal-de-venecia.jpg",
+   "mini": "/galeria/mini/18-gran-canal-de-venecia.jpg"
+  },
+  {
+   "id": "19-oia-santorini",
+   "cat": "ciudades",
+   "titulo": "Oia, Santorini",
+   "autor": "Giles Laurent",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:1000_Three_domes_of_Oia_in_Santorini_Photo_by_Giles_Laurent.jpg",
+   "src": "/galeria/19-oia-santorini.jpg",
+   "mini": "/galeria/mini/19-oia-santorini.jpg"
+  },
+  {
+   "id": "20-manarola-cinque-terre",
+   "cat": "ciudades",
+   "titulo": "Manarola, Cinque Terre",
+   "autor": "This Photo was taken by Timothy A. Gonsalves. Feel free to use my photos, but please mention me as the author. I would m",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Manarola_NW_Cinque_Terre_Sep23_A7C_07233.jpg",
+   "src": "/galeria/20-manarola-cinque-terre.jpg",
+   "mini": "/galeria/mini/20-manarola-cinque-terre.jpg"
+  },
+  {
+   "id": "21-antigua-guatemala",
+   "cat": "ciudades",
+   "titulo": "Antigua Guatemala",
+   "autor": "Adalberto.H.Vega uploaded and derivative work: MrPanyGoff",
+   "licencia": "CC BY 3.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Arco_de_Santa_Catalina_Antigua_Guatemala_edit2.jpg",
+   "src": "/galeria/21-antigua-guatemala.jpg",
+   "mini": "/galeria/mini/21-antigua-guatemala.jpg"
+  },
+  {
+   "id": "22-campo-de-tulipanes",
+   "cat": "flores",
+   "titulo": "Campo de tulipanes",
+   "autor": "Michielverbeek",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Lisse,_tulpenveld_in_verschillende_kleuren_positie2_foto5_2017-04-09_15.33.jpg",
+   "src": "/galeria/22-campo-de-tulipanes.jpg",
+   "mini": "/galeria/mini/22-campo-de-tulipanes.jpg"
+  },
+  {
+   "id": "23-lavanda-en-provenza",
+   "cat": "flores",
+   "titulo": "Lavanda en Provenza",
+   "autor": "Marek Gehrmann",
+   "licencia": "CC BY-SA 3.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Lavender_Field_Provence_France_021.JPG",
+   "src": "/galeria/23-lavanda-en-provenza.jpg",
+   "mini": "/galeria/mini/23-lavanda-en-provenza.jpg"
+  },
+  {
+   "id": "24-girasoles",
+   "cat": "flores",
+   "titulo": "Girasoles",
+   "autor": "Tomascastelazo",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Sunflower_and_a_bee.jpg",
+   "src": "/galeria/24-girasoles.jpg",
+   "mini": "/galeria/mini/24-girasoles.jpg"
+  },
+  {
+   "id": "25-cerezos-en-flor",
+   "cat": "flores",
+   "titulo": "Cerezos en flor",
+   "autor": "掬茶",
+   "licencia": "CC BY-SA 4.0",
+   "fuente": "https://commons.wikimedia.org/wiki/File:Rail_tracks_and_cherry_trees_in_Ashino_Park.jpg",
+   "src": "/galeria/25-cerezos-en-flor.jpg",
+   "mini": "/galeria/mini/25-cerezos-en-flor.jpg"
+  }
+ ]
+}
