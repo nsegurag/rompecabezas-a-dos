@@ -17,7 +17,7 @@ const MAX_CALL = 6;
 const MINUTE = Number(process.env.RZ_MINUTE_MS) || 60000;
 const ROOMS_DIR = path.join(DATA_DIR, 'rooms');
 const IMG_DIR = path.join(DATA_DIR, 'images');
-const MAXES = [2, 4, 8, 12];
+const MAXES = [2, 4, 6];   // la llamada es de hasta 6 personas, así que las salas también
 const MODES = ['classic', 'timed', 'race'];
 const LIMITS = [3, 5, 10, 15, 20, 30, 45, 60];
 const COLORS = ['#f2b134', '#5ec8e5', '#ff7a8a', '#8be07a', '#c59bff', '#ff9f45', '#4fd1b5', '#f78fd6'];
@@ -47,6 +47,7 @@ function migratePuzzle(pz) {
     delete pz.n; delete pz.groups; delete pz.z;
   }
   pz.scores = pz.scores || {};
+  pz.teams = pz.teams || { on: false, assign: {} };
   pz.log = pz.log || {};
   pz.race = pz.race || { state: 'running', startAt: pz.createdAt, endAt: null, results: [] };
   return pz;
@@ -127,7 +128,7 @@ function saveImage(code, dataUrl) {
   return name;
 }
 /** Crea un rompecabezas nuevo a partir de las opciones del asistente. */
-function buildPuzzle({ img, ratio, pieces, mode, limit }) {
+function buildPuzzle({ img, ratio, pieces, mode, limit, lobby }) {
   if (!P.RATIOS[ratio]) throw httpErr(400, 'Proporción de foto no válida.');
   pieces = Number(pieces);
   if (!P.TARGETS.includes(pieces)) throw httpErr(400, 'Número de piezas no válido.');
@@ -140,8 +141,8 @@ function buildPuzzle({ img, ratio, pieces, mode, limit }) {
   const pz = {
     id: crypto.randomBytes(4).toString('hex'), img, ratio, aspect, pieces, cols, rows, ...P.frame(aspect),
     seed: crypto.randomInt(1, 2147483647), mode, limit: limit * MINUTE, createdAt: Date.now(), doneAt: null,
-    boards: {}, scores: {}, log: {},
-    race: mode === 'classic' ? { state: 'running', startAt: Date.now(), endAt: null, results: [] } : { state: 'waiting', startAt: null, endAt: null, results: [] },
+    boards: {}, scores: {}, log: {}, lobby: !!lobby, teams: { on: false, assign: {} },
+    race: mode === 'classic' && !lobby ? { state: 'running', startAt: Date.now(), endAt: null, results: [] } : { state: 'waiting', startAt: null, endAt: null, results: [] },
   };
   if (mode !== 'race') pz.boards.shared = P.createBoard(P.spec(pz), pz.seed);
   return pz;
@@ -166,7 +167,7 @@ function keyFor(r, ws) {
 function puzzleMeta(r) {
   const pz = r.puzzle;
   return { id: pz.id, img: '/img/' + pz.img, ratio: pz.ratio, aspect: pz.aspect, cols: pz.cols, rows: pz.rows, pieces: pz.pieces || pz.cols * pz.rows,
-    PW: pz.PW, PH: pz.PH, FX: pz.FX, FY: pz.FY, seed: pz.seed, mode: pz.mode, limit: pz.limit, createdAt: pz.createdAt, doneAt: pz.doneAt, scores: pz.scores };
+    PW: pz.PW, PH: pz.PH, FX: pz.FX, FY: pz.FY, seed: pz.seed, mode: pz.mode, limit: pz.limit, createdAt: pz.createdAt, doneAt: pz.doneAt, scores: pz.scores, lobby: !!pz.lobby, teams: pz.teams };
 }
 function boardView(r, key) {
   const b = r.puzzle.boards[key];
@@ -214,7 +215,7 @@ function startGame(r) {
   const pz = r.puzzle;
   if (pz.race.state !== 'waiting') return;
   if (pz.mode === 'race') for (const c of r.rt.clients) { ensureBoard(r, c); if (!c.watch) sendBoard(r, c); }
-  pz.race.state = 'countdown'; pz.race.startAt = Date.now() + 3500;
+  readySet(r).clear(); pz.race.state = 'countdown'; pz.race.startAt = Date.now() + 3500;
   armTimers(r); pushRace(r); save(r);
 }
 function goRunning(r) {
@@ -257,17 +258,17 @@ function boardDone(r, key, ws) {
 function replacePuzzle(r, pz, by) {
   const old = r.puzzle && r.puzzle.img;
   r.puzzle = pz;
-  r.rt.holds.clear(); r.rt.timers.forEach(clearTimeout); r.rt.timers = [];
+  r.rt.holds.clear(); r.rt.timers.forEach(clearTimeout); r.rt.timers = []; readySet(r).clear();
   r.lastActive = Date.now();
   if (old && old !== pz.img) fs.rm(path.join(IMG_DIR, old), { force: true }, () => {});
-  for (const c of r.rt.clients) { c.watch = null; ensureBoard(r, c); }
+  for (const c of r.rt.clients) { c.watch = null; ensureBoard(r, c); assignTeam(r, c); }
   for (const c of r.rt.clients) {
     send(c, { t: 'puzzle', puzzle: puzzleMeta(r), board: boardView(r, keyFor(r, c)), race: raceView(r), progress: progressOf(r), by, now: Date.now() });
   }
   save(r, true);
 }
 function samePuzzleOpts(pz, over = {}) {
-  return { img: pz.img, ratio: pz.ratio, pieces: pz.pieces || 16, mode: pz.mode, limit: pz.limit / MINUTE, ...over };
+  return { img: pz.img, ratio: pz.ratio, pieces: pz.pieces || 16, mode: pz.mode, limit: pz.limit / MINUTE, lobby: pz.lobby, ...over };
 }
 
 /* ------------------------------------------------------------------ http */
@@ -343,7 +344,7 @@ const server = http.createServer(async (req, res) => {
       const owner = pubOf(b.uid);
       if (!owner) throw httpErr(400, 'Falta el identificador del navegador. Recarga la página.');
       const code = newCode(), pw = cleanText(b.password, 40);
-      const opts = { ratio: b.ratio, pieces: b.pieces, mode: b.mode, limit: b.limit };
+      const opts = { ratio: b.ratio, pieces: b.pieces, mode: b.mode, limit: b.limit, lobby: b.lobby === true };
       buildPuzzle({ ...opts, img: 'x' }); // valida antes de guardar la foto
       const r = hydrate({
         code, name: cleanText(b.name, 40) || 'Sala ' + code, public: !!b.public,
@@ -369,10 +370,10 @@ const server = http.createServer(async (req, res) => {
       if (role === 'viewer' || (r.perms.photo === 'admin' && !isStaff(r, pub))) throw httpErr(403, 'Solo los administradores de la sala pueden empezar otra partida.');
       if (![...r.rt.clients].some(c => c.pub === pub)) throw httpErr(403, 'Entra a la sala para cambiar la partida.');
       let opts;
-      if (b.sameImage) opts = samePuzzleOpts(r.puzzle, { pieces: b.pieces, mode: b.mode, limit: b.limit });
+      if (b.sameImage) opts = samePuzzleOpts(r.puzzle, { pieces: b.pieces, mode: b.mode, limit: b.limit, lobby: b.lobby === true });
       else {
         if (rateLimited(ip)) throw httpErr(429, 'Demasiadas fotos nuevas. Intenta más tarde.');
-        opts = { ratio: b.ratio, pieces: b.pieces, mode: b.mode, limit: b.limit };
+        opts = { ratio: b.ratio, pieces: b.pieces, mode: b.mode, limit: b.limit, lobby: b.lobby === true };
         buildPuzzle({ ...opts, img: 'x' });
         opts.img = saveImage(r.code, b.image);
       }
@@ -415,8 +416,31 @@ function broadcastBoard(r, key, msg, except) {
   for (const c of r.rt.clients) if (c !== except && c.readyState === 1 && c.board === key) c.send(s);
 }
 function sendBoard(r, ws) { ws.board = keyFor(r, ws); send(ws, { t: 'board', board: boardView(r, ws.board) }); }
+/* ---------- Sala de espera: listos y equipos ---------- */
+const readySet = r => r.rt.ready || (r.rt.ready = new Set());
+const teamOf = (r, pub) => { const t = r.puzzle.teams; return t && t.on && t.assign[pub] != null ? t.assign[pub] : null; };
+const isPlayer = (r, c) => roleOf(r, c.pub) !== 'viewer';
+function assignTeam(r, ws) {   // al entrar a la espera con equipos, va al equipo con menos gente
+  const t = r.puzzle.teams; if (!t.on || t.assign[ws.pub] != null || !isPlayer(r, ws)) return;
+  const n = [0, 0]; for (const c of r.rt.clients) if (c !== ws && t.assign[c.pub] != null) n[t.assign[c.pub]]++;
+  t.assign[ws.pub] = n[0] <= n[1] ? 0 : 1;
+}
+/** Con equipos, cada uno debe tener al menos 1 jugador (1 contra 2 está permitido). */
+function startBlock(r) {
+  const pz = r.puzzle; if (!pz.teams.on || pz.mode === 'race') return null;
+  const n = [0, 0]; for (const c of r.rt.clients) if (isPlayer(r, c)) { const k = teamOf(r, c.pub); if (k != null) n[k]++; }
+  return n[0] && n[1] ? null : 'Cada equipo necesita al menos un jugador.';
+}
+function lobbyCheck(r) {   // cuando todos están listos, empieza la cuenta regresiva
+  const pz = r.puzzle; if (!pz.lobby || pz.race.state !== 'waiting') return;
+  const ps = [...r.rt.clients].filter(c => isPlayer(r, c));
+  if (!ps.length || !ps.every(c => readySet(r).has(c.pub))) return;
+  const why = startBlock(r);
+  if (why) { for (const c of ps) send(c, { t: 'notice', text: why }); return; }
+  startGame(r);
+}
 function playersOf(r) {
-  return [...r.rt.clients].map(c => ({ id: c.id, pub: c.pub, name: c.name, color: c.color, role: roleOf(r, c.pub), muted: r.muted.includes(c.pub), media: c.media }));
+  return [...r.rt.clients].map(c => ({ id: c.id, pub: c.pub, name: c.name, color: c.color, role: roleOf(r, c.pub), muted: r.muted.includes(c.pub), media: c.media, ready: readySet(r).has(c.pub), team: teamOf(r, c.pub) }));
 }
 function pushPlayers(r) { broadcast(r, { t: 'players', players: playersOf(r) }); }
 function pushRoom(r) {
@@ -429,7 +453,8 @@ function release(r, ws) {
 function leave(ws) {
   const r = ws.room; if (!r) return;
   release(r, ws); r.rt.clients.delete(ws); ws.room = null;
-  pushPlayers(r);
+  if (![...r.rt.clients].some(c => c.pub === ws.pub)) readySet(r).delete(ws.pub);
+  pushPlayers(r); lobbyCheck(r);
   broadcast(r, { t: 'cursor', id: ws.id, x: null, y: null });
   // En una carrera, si solo quedan jugadores que ya terminaron, se cierra.
   const pz = r.puzzle;
@@ -546,7 +571,7 @@ wss.on('connection', ws => {
       ws.color = COLORS.includes(m.color) ? m.color : COLORS[0];
       ws.media = { call: false, mic: false, cam: false }; ws.watch = null;
       ws.room = room; room.rt.clients.add(ws); room.lastActive = Date.now();
-      ensureBoard(room, ws);
+      ensureBoard(room, ws); assignTeam(room, ws);
       ws.board = keyFor(room, ws);
       send(ws, { t: 'welcome', you: ws.id, pub: ws.pub, room: roomView(room), puzzle: puzzleMeta(room), board: boardView(room, ws.board),
         race: raceView(room), progress: progressOf(room), players: playersOf(room), chat: room.rt.chat, now: Date.now() });
@@ -599,7 +624,7 @@ wss.on('connection', ws => {
         let score = null;
         if (res.joins || res.placed) {
           const sc = pz.scores[ws.pub] || (pz.scores[ws.pub] = { joins: 0, placed: 0 });
-          sc.name = ws.name; sc.color = ws.color; sc.joins += res.joins; sc.placed += res.placed;
+          sc.name = ws.name; sc.color = ws.color; sc.joins += res.joins; sc.placed += res.placed; sc.team = teamOf(r, ws.pub);
           score = { pub: ws.pub, ...sc };
         }
         broadcastBoard(r, key, { t: 'update', set: res.set, del: res.del, gid, by: ws.id, merged: res.merged, locked: res.locked, score });
@@ -620,8 +645,28 @@ wss.on('connection', ws => {
         save(r);
         break;
       }
+      case 'ready': {
+        if (!pz.lobby || pz.race.state !== 'waiting' || role === 'viewer') return;
+        if (m.v) readySet(r).add(ws.pub); else readySet(r).delete(ws.pub);
+        pushPlayers(r); lobbyCheck(r);
+        break;
+      }
+      case 'team': {   // cada quien elige su equipo mientras esperan
+        if (!pz.lobby || pz.race.state !== 'waiting' || !pz.teams.on || role === 'viewer' || ![0, 1].includes(m.team)) return;
+        pz.teams.assign[ws.pub] = m.team; readySet(r).delete(ws.pub);
+        pushPlayers(r); save(r);
+        break;
+      }
+      case 'teams': {  // el anfitrión activa o apaga los equipos
+        if (!canControl(r, ws) || !pz.lobby || pz.race.state !== 'waiting' || pz.mode === 'race') return;
+        pz.teams.on = !!m.on; pz.teams.assign = {}; readySet(r).clear();
+        if (pz.teams.on) for (const c of r.rt.clients) assignTeam(r, c);
+        broadcast(r, { t: 'teams', teams: pz.teams }); pushPlayers(r); save(r);
+        break;
+      }
       case 'start': {
         if (!canControl(r, ws)) return send(ws, { t: 'notice', text: 'Solo un administrador puede empezar la partida.' });
+        if (pz.lobby && startBlock(r)) return send(ws, { t: 'notice', text: startBlock(r) });
         startGame(r);
         break;
       }

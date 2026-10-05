@@ -321,7 +321,9 @@ function card(title, text, buttons = [], extra = null, corner = false) {
 const hideCard = () => { dismissed = stateKey(); $('stateCard').hidden = true; };
 function renderState() {
   const pz = game.puzzle, race = game.race, c = $('stateCard');
+  renderLobby();
   if (!pz || !race) { c.hidden = true; return; }
+  if (pz.lobby && race.state === 'waiting') { c.hidden = true; return; }
   const key = stateKey();
   if (dismissed === key) { c.hidden = true; return; }
   const total = pz.cols * pz.rows, limitTxt = pz.limit ? fmt(pz.limit) : null;
@@ -362,7 +364,7 @@ function renderState() {
   if (pz.doneAt && pz.mode !== 'race') {
     const ms = pz.doneAt - (race.startAt || pz.createdAt);
     const extra = podium();
-    card('¡Completado!', `${pz.mode === 'timed' ? `¡Lo lograron con ${fmt(Math.max(0, pz.limit - ms))} de sobra! ` : ''}Tiempo: ${fmt(ms)}.`, [...videoBtn, ...newBtn, ['Admirar', hideCard]], extra);
+    card('¡Completado!', `${pz.mode === 'timed' ? `¡Lo lograron con ${fmt(Math.max(0, pz.limit - ms))} de sobra! ` : ''}Tiempo: ${fmt(ms)}.${teamWinnerText()}`, [...videoBtn, ...newBtn, ['Admirar', hideCard]], extra);
     return;
   }
   c.hidden = true;
@@ -612,6 +614,79 @@ function wireTrayItem(b) {
 
 /* ---------------- jugadores, puntos y administración ---------------- */
 const points = s => (s ? s.joins + s.placed : 0);
+
+/* ---------------- sala de espera, equipos y marcador por equipo ---------------- */
+const TEAMS = [{ name: 'Ámbar', color: '#f2b134' }, { name: 'Cian', color: '#5ec8e5' }];
+const teamsOn = () => !!(game.puzzle && game.puzzle.teams && game.puzzle.teams.on && game.puzzle.mode !== 'race');
+/** Puntos por equipo: se cuenta el promedio por jugador, así 1 contra 2 es justo. */
+function teamTotals() {
+  const sc = game.scores || {}, t = [0, 1].map(() => ({ pts: 0, n: 0 }));
+  for (const p of game.players) if (p.role !== 'viewer' && p.team != null) t[p.team].n++;
+  for (const [pub, s] of Object.entries(sc)) if (s.team != null) { t[s.team].pts += points(s); const who = game.players.find(p => p.pub === pub); if (!who && !t[s.team].n) t[s.team].n = 1; }
+  return t.map((x, i) => ({ ...TEAMS[i], pts: x.pts, n: x.n, avg: x.n ? Math.round((x.pts / x.n) * 10) / 10 : 0 }));
+}
+function renderLobby() {
+  const box = $('waitroom'), pz = game.puzzle, race = game.race;
+  const on = !!(pz && race && pz.lobby && race.state === 'waiting');
+  box.hidden = !on; if (!on) return;
+  const me = game.players.find(p => p.id === game.you), ctl = canControl(), mine = me && me.role !== 'viewer';
+  const ps = game.players.filter(p => p.role !== 'viewer'), ready = ps.filter(p => p.ready).length;
+  box.textContent = '';
+  const card = el('div', 'wr-card');
+  const head = el('div', 'wr-head');
+  const img = el('img', 'wr-img'); img.src = pz.img; img.alt = 'La imagen del rompecabezas';
+  const info = el('div', 'wr-info');
+  const mode = { classic: 'Clásico', timed: 'Contrarreloj', race: 'Carrera' }[pz.mode] || pz.mode;
+  info.append(el('h2', '', 'Sala de espera'), el('p', 'muted', `${pz.pieces} piezas · ${mode}${pz.limit ? ' · ' + fmt(pz.limit) : ''}`),
+    el('p', 'muted', ctl ? 'Tú configuras la partida. Empieza cuando todos pulsen Listo.' : 'Pulsa Listo cuando estés preparado. Empieza cuando todos lo estén.'));
+  head.append(img, info); card.append(head);
+
+  if (ctl && pz.mode !== 'race') {
+    const row = el('div', 'seg wr-seg'); row.setAttribute('role', 'group');
+    for (const [v, label] of [[false, 'Todos juntos'], [true, 'Por equipos']]) {
+      const b = el('button', '', label); b.type = 'button'; b.setAttribute('aria-pressed', String(teamsOn() === v));
+      b.onclick = () => game.send({ t: 'teams', on: v }); row.append(b);
+    }
+    card.append(row);
+  }
+  const person = p => {
+    const li = el('li', 'wr-p' + (p.ready ? ' ok' : ''));
+    const d = el('span', 'dot'); d.style.background = p.color;
+    li.append(d, el('span', 'nm', p.name + (p.id === game.you ? ' (tú)' : '')), p.role === 'owner' ? el('span', 'ic', '👑') : '', el('span', 'st', p.ready ? '✓ Listo' : 'Esperando…'));
+    return li;
+  };
+  if (teamsOn()) {
+    const cols = el('div', 'wr-teams');
+    TEAMS.forEach((t, i) => {
+      const col = el('div', 'wr-team'); col.style.setProperty('--tc', t.color);
+      const mem = ps.filter(p => p.team === i), ul = el('ul', 'wr-list');
+      mem.forEach(p => ul.append(person(p)));
+      if (!mem.length) ul.append(el('li', 'wr-empty', 'Sin jugadores todavía'));
+      col.append(el('h3', '', `Equipo ${t.name}`), ul);
+      if (mine && me.team !== i) { const b = el('button', 'btn small', 'Unirme a este equipo'); b.type = 'button'; b.onclick = () => game.send({ t: 'team', team: i }); col.append(b); }
+      cols.append(col);
+    });
+    card.append(cols, el('p', 'muted center small-note', 'Se permite 1 contra 2: el marcador cuenta el promedio por jugador.'));
+  } else {
+    const ul = el('ul', 'wr-list'); ps.forEach(p => ul.append(person(p))); card.append(ul);
+  }
+  const foot = el('div', 'foot'); foot.append(el('span', 'muted', `${ready} de ${ps.length} listos`));
+  const btns = el('div', 'btns');
+  if (ctl) { const b = el('button', 'btn', 'Cambiar partida'); b.type = 'button'; b.onclick = () => openWizard('new'); btns.append(b); const s = el('button', 'btn', 'Empezar ya'); s.type = 'button'; s.onclick = () => game.control('start'); btns.append(s); }
+  if (mine) { const r = el('button', 'btn primary', me.ready ? 'Ya no estoy listo' : '¡Listo!'); r.type = 'button'; r.onclick = () => game.send({ t: 'ready', v: !me.ready }); btns.append(r); }
+  foot.append(btns); card.append(foot); box.append(card);
+}
+function teamBar() {
+  if (!teamsOn() || isMobile()) return null;
+  const bar = el('span', 'team-bar');
+  for (const t of teamTotals()) { const s = el('span', 'team-pill', `Equipo ${t.name} · ${t.avg}`); s.style.setProperty('--tc', t.color); s.title = `${t.pts} puntos entre ${t.n || 1} jugador(es)`; bar.append(s); }
+  return bar;
+}
+function teamWinnerText() {
+  if (!teamsOn()) return '';
+  const [a, b] = teamTotals(); if (a.avg === b.avg) return ' Empate entre equipos.';
+  const w = a.avg > b.avg ? a : b; return ` Ganó el Equipo ${w.name} (${a.avg} contra ${b.avg} por jugador).`;
+}
 function renderPlayers() {
   const list = game.players, you = game.you, scores = game.scores || {};
   const box = $('players'); box.textContent = '';
@@ -627,6 +702,7 @@ function renderPlayers() {
     box.append(c);
   }
   if (list.length > max) box.append(el('span', 'chip', `+${list.length - max}`));
+  const tb = teamBar(); if (tb) box.append(tb);
   if (list.length < 2 && !isMobile()) box.append(el('span', 'muted', 'Esperando a tu compañero…'));
 
   const staff = isStaff();
@@ -933,7 +1009,7 @@ function renderWizard() {
   renderModes(); renderLimits(); renderPieces();
   // Paso sala
   seg($('segVis'), [{ v: false, label: 'Privada', sub: 'Solo con el código' }, { v: true, label: 'Pública', sub: 'Sale en la lista' }], () => wz.isPublic, v => { wz.isPublic = v; });
-  seg($('segMax'), [2, 4, 8, 12].map(v => ({ v, label: String(v) })), () => wz.max, v => { wz.max = v; });
+  seg($('segMax'), [2, 4, 6].map(v => ({ v, label: String(v) })), () => wz.max, v => { wz.max = v; });
   // Pie
   const last = wz.i === wz.steps.length - 1;
   $('wzBack').textContent = wz.i === 0 ? 'Cancelar' : 'Atrás';
@@ -1015,7 +1091,7 @@ $('wzForm').addEventListener('submit', async e => {
   if (wz.i < wz.steps.length - 1) { wz.i++; $('wzErr').hidden = true; renderWizard(); return; }
   const btn = $('wzNext'), label = btn.textContent; btn.disabled = true; btn.textContent = 'Subiendo…';
   try {
-    const opts = { pieces: wz.pieces, mode: wz.mode, limit: wz.mode === 'classic' ? 0 : wz.limit };
+    const opts = { pieces: wz.pieces, mode: wz.mode, limit: wz.mode === 'classic' ? 0 : wz.limit, lobby: true };
     let image = null;
     if (!wz.same) { image = cropper.export(wz.pieces); if (!image) throw new Error('La foto es demasiado pesada. Prueba con otra.'); }
     if (wz.kind === 'create') {

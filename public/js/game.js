@@ -172,6 +172,7 @@ export function createGame({ canvas: cv, net, getProfile, ui }) {
   net.on('puzzle', m => { setRace(m.race, m.progress, m.now); setPuzzle(m.puzzle, m.board); ui.onNewPuzzle(m.by); });
   net.on('board', m => setBoard(m.board));
   net.on('race', m => setRace(m.race, m.progress, m.now));
+  net.on('teams', m => { if (st.pz) st.pz.teams = m.teams; ui.onPlayers(st.players, st.you); });
   net.on('progress', m => { st.progress = m.progress; ui.onRace(st.race, st.progress); });
   net.on('mode', m => { if (st.pz) { st.pz.mode = m.mode; st.pz.limit = m.limit; ui.onPuzzle(st.pz); pushHud(); } });
   net.on('room', m => { st.room = m.room; ui.onRoom(m.room); });
@@ -425,6 +426,7 @@ export function createGame({ canvas: cv, net, getProfile, ui }) {
     chat(text) { return net.send({ t: 'chat', text }); },
     profile(p) { net.send({ t: 'profile', ...p }); },
     control(t) { if (!net.send({ t })) ui.onToast('Sin conexión.'); },
+    send(m) { if (!net.send(m)) ui.onToast('Sin conexión.'); },
     watch(pub) { net.send({ t: 'watch', board: pub }); },
     react(e) {
       const lw = st.lastWorld && performance.now() - st.lastWorld.t < 8000 ? st.lastWorld : { x: (cw / 2 - view.tx) / view.s, y: (ch / 2 - view.ty) / view.s };

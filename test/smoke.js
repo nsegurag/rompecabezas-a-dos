@@ -203,6 +203,39 @@ async function solve(C, groups, pid, FX, FY) {
     ok(!!cl, 'el dueño puede cerrar la sala');
     O.close(); P.close();
 
+
+    section('Sala de espera, listos y equipos');
+    const UW = newUid(), UW2 = newUid(), UW3 = newUid();
+    const lw = await createRoom({ uid: UW, lobby: true, max: 6 });
+    const W1 = client(lw.code, 'Ana', { uid: UW }); const ww = await W1.next('welcome');
+    ok(ww.race.state === 'waiting' && ww.puzzle.lobby, 'con sala de espera, el modo clásico no empieza solo');
+    W1.send({ t: 'teams', on: true }); await W1.next('teams');
+    const W2 = client(lw.code, 'Beto', { uid: UW2 }); await W2.next('welcome');
+    const W3 = client(lw.code, 'Caro', { uid: UW3 }); const w3 = await W3.next('welcome');
+    const mine = w3.players.find(p => p.name === 'Caro');
+    ok(w3.players.every(p => p.team === 0 || p.team === 1), 'cada jugador queda en un equipo al entrar');
+    W3.send({ t: 'team', team: mine.team === 0 ? 1 : 0 });
+    const pt = await W3.next('players', m => m.players.find(p => p.name === 'Caro').team !== mine.team);
+    ok(!!pt, 'un jugador puede cambiar de equipo');
+    W1.send({ t: 'ready', v: true }); W2.send({ t: 'ready', v: true });
+    const early = await W1.next('race', () => true, 500).catch(() => null);
+    ok(!early, 'no empieza mientras falte alguien por estar listo');
+    W3.send({ t: 'ready', v: true });
+    const cdw = await W1.next('race', m => m.race.state === 'countdown');
+    ok(!!cdw, 'cuando todos están listos empieza la cuenta regresiva');
+    W1.close(); W2.close(); W3.close();
+    const lw2 = await createRoom({ uid: UW, lobby: true, max: 6 });
+    const X1 = client(lw2.code, 'Ana', { uid: UW }); await X1.next('welcome'); X1.send({ t: 'teams', on: true }); await X1.next('teams');
+    const X2 = client(lw2.code, 'Beto', { uid: UW2 }); await X2.next('welcome');
+    X1.send({ t: 'team', team: 0 }); X2.send({ t: 'team', team: 0 });
+    await X2.next('players', m => m.players.every(p => p.team === 0));
+    X1.send({ t: 'start' }); const nbk = await X1.next('notice');
+    ok(/equipo/i.test(nbk.text), 'no se puede empezar con un equipo vacío');
+    X2.send({ t: 'team', team: 1 }); await X1.next('players', m => m.players.some(p => p.team === 1));
+    X1.send({ t: 'start' }); const one = await X1.next('race', m => m.race.state === 'countdown');
+    ok(!!one, '1 contra 1 (o 1 contra 2) sí puede empezar');
+    X1.close(); X2.close();
+
     section('Salas de la versión anterior');
     const L = client('OLD22', 'Lalo'); const wl = await L.next('welcome');
     ok(wl.puzzle.cols === 3 && wl.puzzle.mode === 'classic' && Object.keys(wl.board.groups).length === 9, 'una sala antigua se abre con su progreso');
